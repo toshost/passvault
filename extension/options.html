@@ -5,51 +5,98 @@
 <title>Passvault settings</title>
 <style>
   :root {
-    --surface: #ffffff; --surface-2: #f8f9fc; --border: #e5e7f0;
-    --text: #14161f; --text-muted: #6b7080; --primary: #4f46e5; --danger: #dc2626; --good: #16a34a;
-    --radius-sm: 7px;
+    --surface: #ffffff; --surface-2: #f7f7fb; --surface-3: #eef0f7; --border: #e5e7f0;
+    --text: #14161f; --text-muted: #6b7080; --primary: #4f46e5; --primary-hover: #4338ca;
+    --primary-soft: #eef0fd; --danger: #dc2626; --danger-soft: #fef2f2; --good: #16a34a; --good-soft: #f0fdf4;
+    --radius: 12px; --radius-sm: 8px; --shadow: 0 1px 3px rgba(20,22,31,.06);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --surface: #171a24; --surface-2: #1d212c; --border: #2a2e3a;
-      --text: #eef0f6; --text-muted: #9297a8; --primary: #818cf8; --danger: #f87171; --good: #4ade80;
+      --surface: #16181f; --surface-2: #1c1f28; --surface-3: #242833; --border: #2a2e3a;
+      --text: #eef0f6; --text-muted: #9297a8; --primary: #818cf8; --primary-hover: #a5b4fc;
+      --primary-soft: #262a45; --danger: #f87171; --danger-soft: #3a1d1f; --good: #4ade80; --good-soft: #163021;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
     }
   }
   * { box-sizing: border-box; }
   body {
-    max-width: 440px; margin: 40px auto; padding: 0 20px;
-    background: var(--surface); color: var(--text);
-    font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0; padding: 56px 24px 80px;
+    background: var(--surface-2); color: var(--text);
+    font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 18px; }
-  p.hint { color: var(--text-muted); font-size: 13px; }
-  label { display: block; margin: 16px 0 6px; font-weight: 600; }
+  .wrap { max-width: 480px; margin: 0 auto; }
+
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 28px; }
+  .brand img { width: 32px; height: 32px; border-radius: 7px; }
+  .brand span { font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 26px;
+  }
+  h1 { font-size: 17px; margin: 0 0 8px; }
+  p.hint { color: var(--text-muted); font-size: 13px; line-height: 1.55; margin: 0 0 22px; }
+
+  label { display: block; margin: 0 0 6px; font-weight: 600; font-size: 13px; }
   input {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    background: var(--surface-2); color: var(--text); font-size: 14px;
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-2); color: var(--text); font-size: 14px; font-family: inherit;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input:focus {
+    outline: none; border-color: var(--primary); background: var(--surface);
+    box-shadow: 0 0 0 3px var(--primary-soft);
   }
   button {
-    margin-top: 14px; border: none; border-radius: var(--radius-sm); padding: 9px 16px;
+    margin-top: 16px; border: none; border-radius: var(--radius-sm); padding: 10px 18px;
     background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;
+    font-family: inherit; box-shadow: var(--shadow); transition: background .12s;
   }
-  .msg { margin-top: 12px; font-size: 13px; }
-  .msg.error { color: var(--danger); }
-  .msg.ok { color: var(--good); }
+  button:hover { background: var(--primary-hover); }
+  .msg { margin-top: 14px; font-size: 13px; padding: 10px 12px; border-radius: var(--radius-sm); line-height: 1.45; }
+  .msg.error { color: var(--danger); background: var(--danger-soft); }
+  .msg.ok { color: var(--good); background: var(--good-soft); }
+  [hidden] { display: none !important; }
+
+  .steps { margin: 26px 0 0; padding: 0; list-style: none; }
+  .steps li {
+    display: flex; gap: 12px; padding: 9px 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;
+  }
+  .steps .n {
+    flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--surface-3); color: var(--text);
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+
+  footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--text-muted); }
+  footer a { color: var(--text-muted); }
 </style>
 </head>
 <body>
-  <h1>Passvault settings</h1>
-  <p class="hint">
-    Passvault is self-hosted — point this extension at your own instance.
-    The extension will ask your browser's permission to talk to that one
-    origin; it never gets access to any other site's data.
-  </p>
-  <label for="server-url">Server URL</label>
-  <input type="url" id="server-url" placeholder="https://your-instance.example.com/tpass" autocomplete="off">
-  <div>
-    <button id="save-btn">Save &amp; grant access</button>
+  <div class="wrap">
+    <div class="brand"><img src="icons/icon-48.png" alt=""><span>Passvault</span></div>
+    <div class="card">
+      <h1>Connect your server</h1>
+      <p class="hint">
+        Passvault is self-hosted — this extension only ever talks to the instance
+        you point it at, and asks your browser to confirm access to that one
+        origin. It never sees any other site's data.
+      </p>
+      <label for="server-url">Server URL</label>
+      <input type="url" id="server-url" placeholder="https://your-instance.example.com/tpass" autocomplete="off">
+      <div>
+        <button id="save-btn">Save &amp; grant access</button>
+      </div>
+      <p class="msg" id="msg" hidden></p>
+
+      <ol class="steps">
+        <li><span class="n">1</span>Enter your Passvault instance's full URL, starting with https://.</li>
+        <li><span class="n">2</span>Chrome will ask you to confirm access to that origin — accept it.</li>
+        <li><span class="n">3</span>Click the Passvault icon in your toolbar and log in with your master password.</li>
+      </ol>
+    </div>
+    <footer>Free, open-source, zero-knowledge &mdash; <a href="https://github.com/toshost/passvault" target="_blank" rel="noopener">github.com/toshost/passvault</a></footer>
   </div>
-  <p class="msg" id="msg" hidden></p>
   <script src="options.js"></script>
 </body>
 </html>

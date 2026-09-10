@@ -5,89 +5,195 @@
 <title>Passvault</title>
 <style>
   :root {
-    --surface: #ffffff; --surface-2: #f8f9fc; --border: #e5e7f0;
-    --text: #14161f; --text-muted: #6b7080; --primary: #4f46e5; --danger: #dc2626;
-    --radius: 10px; --radius-sm: 7px;
+    --surface: #ffffff; --surface-2: #f7f7fb; --surface-3: #eef0f7; --border: #e5e7f0;
+    --text: #14161f; --text-muted: #6b7080; --primary: #4f46e5; --primary-hover: #4338ca;
+    --primary-soft: #eef0fd; --danger: #dc2626; --danger-soft: #fef2f2; --good: #16a34a;
+    --radius: 10px; --radius-sm: 8px; --shadow: 0 1px 2px rgba(20,22,31,.05);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --surface: #171a24; --surface-2: #1d212c; --border: #2a2e3a;
-      --text: #eef0f6; --text-muted: #9297a8; --primary: #818cf8; --danger: #f87171;
+      --surface: #16181f; --surface-2: #1c1f28; --surface-3: #242833; --border: #2a2e3a;
+      --text: #eef0f6; --text-muted: #9297a8; --primary: #818cf8; --primary-hover: #a5b4fc;
+      --primary-soft: #262a45; --danger: #f87171; --danger-soft: #3a1d1f; --good: #4ade80;
+      --shadow: 0 1px 2px rgba(0,0,0,.3);
     }
   }
   * { box-sizing: border-box; }
   body {
-    width: 320px; margin: 0; padding: 14px;
+    width: 348px; margin: 0; padding: 0;
     background: var(--surface); color: var(--text);
-    font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 14px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
-  h1 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
-  h1 .dot.unlocked { background: #16a34a; }
-  label { display: block; margin: 10px 0 4px; color: var(--text-muted); font-size: 12px; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Header ---------- */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand img { width: 22px; height: 22px; border-radius: 5px; }
+  .brand span { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex: none; }
+  .status-dot.unlocked { background: var(--good); }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: var(--radius-sm); border: none;
+    background: transparent; color: var(--text-muted); cursor: pointer; padding: 0;
+  }
+  .icon-btn:hover { background: var(--surface-3); color: var(--text); }
+
+  .body-pad { padding: 16px; }
+
+  /* ---------- Loading ---------- */
+  .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; gap: 12px; color: var(--text-muted); font-size: 12.5px; }
+  .spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--surface-3); border-top-color: var(--primary);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Setup ---------- */
+  .setup-state { text-align: center; padding: 28px 16px 20px; }
+  .setup-state .glyph {
+    width: 44px; height: 44px; border-radius: 12px; background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .setup-state p { color: var(--text-muted); font-size: 12.5px; line-height: 1.5; margin: 0 0 18px; }
+
+  /* ---------- Forms ---------- */
+  label { display: block; margin: 0 0 5px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+  .field + .field { margin-top: 12px; }
   input {
-    width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    background: var(--surface-2); color: var(--text); font-size: 13px;
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-2); color: var(--text); font-size: 13.5px; font-family: inherit;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input:focus {
+    outline: none; border-color: var(--primary); background: var(--surface);
+    box-shadow: 0 0 0 3px var(--primary-soft);
   }
   button {
-    border: none; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px;
-    font-weight: 600; cursor: pointer; margin-top: 10px;
+    border: none; border-radius: var(--radius-sm); padding: 9px 14px; font-size: 13.5px;
+    font-weight: 600; cursor: pointer; font-family: inherit; transition: background .12s;
   }
-  button.primary { background: var(--primary); color: #fff; width: 100%; }
+  button.primary { background: var(--primary); color: #fff; width: 100%; margin-top: 16px; box-shadow: var(--shadow); }
+  button.primary:hover { background: var(--primary-hover); }
   button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
-  .error { color: var(--danger); font-size: 12px; margin-top: 8px; }
-  .hint { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
-  a { color: var(--primary); }
-  .match {
-    display: flex; justify-content: space-between; align-items: center; gap: 8px;
-    padding: 8px 0; border-bottom: 1px solid var(--border);
+  button.secondary:hover { background: var(--surface-3); }
+  .error {
+    color: var(--danger); background: var(--danger-soft); border-radius: var(--radius-sm);
+    font-size: 12px; padding: 8px 10px; margin-top: 12px; line-height: 1.4;
   }
-  .match:last-child { border-bottom: none; }
-  .match-name { font-weight: 600; }
-  .match-username { color: var(--text-muted); font-size: 12px; }
-  .match button { margin-top: 0; padding: 5px 9px; }
-  .row { display: flex; gap: 8px; }
-  .row button { flex: 1; }
-  [hidden] { display: none !important; }
+  .hint { color: var(--text-muted); font-size: 12px; margin-top: 10px; line-height: 1.45; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- Unlocked / matches ---------- */
+  .account-row { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex: none;
+  }
+  .account-row .email { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .account-row .site-label { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  .section-label {
+    padding: 12px 16px 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  #matches-list { padding: 0 8px 4px; }
+  .match {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px; border-radius: var(--radius-sm);
+  }
+  .match:hover { background: var(--surface-2); }
+  .match-glyph {
+    width: 30px; height: 30px; border-radius: 8px; background: var(--surface-3); color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12.5px; flex: none;
+  }
+  .match-info { flex: 1; min-width: 0; }
+  .match-name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .match-username { color: var(--text-muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .match button { margin: 0; padding: 6px 11px; font-size: 12.5px; }
+
+  .empty-state { padding: 28px 16px 24px; text-align: center; color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+
+  .footer-row { display: flex; gap: 8px; padding: 14px 16px; border-top: 1px solid var(--border); }
+  .footer-row button { flex: 1; }
 </style>
 </head>
 <body>
 
-  <div id="view-loading">Loading…</div>
+  <div id="view-loading">
+    <div class="loading-state"><div class="spinner"></div>Loading…</div>
+  </div>
 
   <div id="view-setup" hidden>
-    <h1><span class="dot"></span> Passvault</h1>
-    <p class="hint">No server configured yet.</p>
-    <button class="primary" id="open-options-btn">Set up your server</button>
+    <div class="header"><div class="brand"><img src="icons/icon-32.png" alt=""><span>Passvault</span></div></div>
+    <div class="setup-state">
+      <div class="glyph">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.63 3.2 8.95 7 10 3.8-1.05 7-5.37 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+      <p>Point this extension at your self-hosted Passvault server to get started.</p>
+      <button class="primary" id="open-options-btn" style="margin-top:0">Set up your server</button>
+    </div>
   </div>
 
   <div id="view-login" hidden>
-    <h1><span class="dot"></span> Passvault</h1>
-    <form id="login-form">
-      <label for="login-email">Email</label>
-      <input type="email" id="login-email" autocomplete="username" required>
-      <label for="login-password">Master password</label>
-      <input type="password" id="login-password" autocomplete="current-password" required>
-      <button class="primary" type="submit">Unlock</button>
-    </form>
-    <p class="error" id="login-error" hidden></p>
+    <div class="header"><div class="brand"><img src="icons/icon-32.png" alt=""><span>Passvault</span></div><span class="status-dot"></span></div>
+    <div class="body-pad">
+      <form id="login-form">
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="login-password">Master password</label>
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </div>
+        <button class="primary" type="submit">Unlock</button>
+      </form>
+      <p class="error" id="login-error" hidden></p>
+    </div>
   </div>
 
   <div id="view-2fa" hidden>
-    <h1><span class="dot"></span> Passvault</h1>
-    <form id="twofa-form">
-      <label for="twofa-code">2FA code</label>
-      <input type="text" id="twofa-code" inputmode="numeric" placeholder="123456" autocomplete="one-time-code" required>
-      <button class="primary" type="submit">Verify</button>
-    </form>
-    <p class="error" id="twofa-error" hidden></p>
+    <div class="header"><div class="brand"><img src="icons/icon-32.png" alt=""><span>Passvault</span></div><span class="status-dot"></span></div>
+    <div class="body-pad">
+      <form id="twofa-form">
+        <div class="field">
+          <label for="twofa-code">2FA code</label>
+          <input type="text" id="twofa-code" inputmode="numeric" placeholder="123456" autocomplete="one-time-code" required>
+        </div>
+        <button class="primary" type="submit">Verify</button>
+      </form>
+      <p class="error" id="twofa-error" hidden></p>
+    </div>
   </div>
 
   <div id="view-unlocked" hidden>
-    <h1><span class="dot unlocked"></span> <span id="unlocked-email"></span></h1>
-    <div id="matches-list"></div>
-    <p class="hint" id="no-matches-hint" hidden>No saved logins for this site.</p>
-    <div class="row">
+    <div class="header">
+      <div class="brand"><img src="icons/icon-32.png" alt=""><span>Passvault</span></div>
+      <button class="icon-btn" id="open-options-icon-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.7"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.05 2.05 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V20a2.05 2.05 0 1 1-4.1 0v-.09a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2.05 2.05 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H4a2.05 2.05 0 1 1 0-4.1h.09a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.05 2.05 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 1.87.34H10.4a1.7 1.7 0 0 0 1.03-1.55V4a2.05 2.05 0 1 1 4.1 0v.09a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2.05 2.05 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87V9.6a1.7 1.7 0 0 0 1.55 1.03H20a2.05 2.05 0 1 1 0 4.1h-.09a1.7 1.7 0 0 0-1.55 1.03Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="account-row">
+      <div class="avatar" id="unlocked-avatar"></div>
+      <div style="min-width:0">
+        <div class="email" id="unlocked-email"></div>
+        <div class="site-label" id="unlocked-site"></div>
+      </div>
+    </div>
+    <div id="matches-section">
+      <div class="section-label">Suggested for this site</div>
+      <div id="matches-list"></div>
+    </div>
+    <div class="empty-state" id="no-matches-hint" hidden>No saved logins for this site yet.</div>
+    <div class="footer-row">
       <button class="secondary" id="open-vault-btn">Open full vault</button>
       <button class="secondary" id="lock-btn">Lock</button>
     </div>

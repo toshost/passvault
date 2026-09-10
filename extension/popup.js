@@ -30,25 +30,31 @@ async function activeTabHost() {
 
 async function renderMatches() {
   const host = await activeTabHost();
+  $("#unlocked-site").textContent = host || "";
   const list = $("#matches-list");
   list.innerHTML = "";
   if (!host) {
+    $("#matches-section").hidden = true;
     $("#no-matches-hint").hidden = false;
     return;
   }
   const { items } = await sendMessage({ type: "PV_GET_MATCHES", host });
+  $("#matches-section").hidden = items.length === 0;
   $("#no-matches-hint").hidden = items.length > 0;
   for (const item of items) {
     const row = document.createElement("div");
     row.className = "match";
     row.innerHTML = `
-      <div>
+      <div class="match-glyph"></div>
+      <div class="match-info">
         <div class="match-name"></div>
         <div class="match-username"></div>
       </div>
       <button class="secondary" type="button">Fill</button>
     `;
-    row.querySelector(".match-name").textContent = item.name || item.uri;
+    const label = item.name || item.uri;
+    row.querySelector(".match-glyph").textContent = (label[0] || "?").toUpperCase();
+    row.querySelector(".match-name").textContent = label;
     row.querySelector(".match-username").textContent = item.username;
     row.querySelector("button").addEventListener("click", async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -71,11 +77,13 @@ async function refresh() {
     return;
   }
   $("#unlocked-email").textContent = state.email;
+  $("#unlocked-avatar").textContent = (state.email && state.email[0] || "?").toUpperCase();
   showView("view-unlocked");
   await renderMatches();
 }
 
 $("#open-options-btn").addEventListener("click", () => chrome.runtime.openOptionsPage());
+$("#open-options-icon-btn").addEventListener("click", () => chrome.runtime.openOptionsPage());
 
 $("#login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
