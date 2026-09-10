@@ -31,6 +31,7 @@ async function activeTabHost() {
 async function renderMatches() {
   const host = await activeTabHost();
   $("#unlocked-site").textContent = host || "";
+  $("#empty-site-label").textContent = host || "this site";
   const list = $("#matches-list");
   list.innerHTML = "";
   if (!host) {
@@ -84,6 +85,13 @@ async function refresh() {
 
 $("#open-options-btn").addEventListener("click", () => chrome.runtime.openOptionsPage());
 $("#open-options-icon-btn").addEventListener("click", () => chrome.runtime.openOptionsPage());
+
+$("#toggle-login-password").addEventListener("click", () => {
+  const input = $("#login-password");
+  const showing = input.type === "text";
+  input.type = showing ? "password" : "text";
+  $("#toggle-login-password").setAttribute("title", showing ? "Show password" : "Hide password");
+});
 
 $("#login-form").addEventListener("submit", async (e) => {
   e.preventDefault();

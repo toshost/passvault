@@ -144,39 +144,70 @@ async function checkAndOfferAutofill() {
 // field, ask the background worker whether this is already saved; if not,
 // show a small prompt. No auto-save — the user always confirms.
 
+// Shadow DOM, not a plain injected <div>: the host page's own CSS can
+// never leak in and mangle this (a page-wide `button { all: unset }` or
+// similar reset would otherwise silently break it), and this element's
+// styles can never leak out and affect the host page either — a real
+// isolation boundary, not just "hope nothing collides."
 function showSavePrompt(candidate) {
-  const bar = document.createElement("div");
-  bar.setAttribute("data-passvault-save-prompt", "1");
-  Object.assign(bar.style, {
-    position: "fixed",
-    top: "12px",
-    right: "12px",
-    zIndex: 2147483647,
-    background: "#fff",
-    border: "1px solid #ddd7c9",
-    borderRadius: "6px",
-    boxShadow: "0 2px 10px rgba(0,0,0,.15)",
-    padding: "12px 14px",
-    font: "13px -apple-system, sans-serif",
-    color: "#201e1a",
-    maxWidth: "280px",
-  });
-  bar.innerHTML = `
-    <div style="margin-bottom:8px">Save this password to Passvault?</div>
-    <button data-action="save" style="margin-right:8px;padding:5px 10px;border:none;border-radius:4px;background:#4f46e5;color:#fff;cursor:pointer">Save</button>
-    <button data-action="dismiss" style="padding:5px 10px;border:1px solid #ddd7c9;border-radius:4px;background:#fff;cursor:pointer">Not now</button>
+  const host = document.createElement("div");
+  host.setAttribute("data-passvault-save-prompt", "1");
+  Object.assign(host.style, { all: "initial", position: "fixed", top: "16px", right: "16px", zIndex: 2147483647 });
+  const root = host.attachShadow({ mode: "closed" });
+  root.innerHTML = `
+    <style>
+      :host { all: initial; }
+      .card {
+        font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        width: 300px; background: #fff; color: #14161f;
+        border: 1px solid #e5e7f0; border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(20,22,31,.14), 0 1px 3px rgba(20,22,31,.08);
+        padding: 16px; animation: pv-in .16s ease-out;
+      }
+      @keyframes pv-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+      .head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+      .head svg { width: 20px; height: 20px; flex: none; color: #4f46e5; }
+      .head span { font-weight: 700; font-size: 14px; }
+      .detail { font-size: 12.5px; color: #6b7080; margin: 0 0 14px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .detail strong { color: #14161f; font-weight: 600; }
+      .row { display: flex; gap: 8px; }
+      button {
+        border: none; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+        cursor: pointer; font-family: inherit;
+      }
+      button[data-action="save"] { background: #4f46e5; color: #fff; flex: 1; }
+      button[data-action="save"]:hover { background: #4338ca; }
+      button[data-action="dismiss"] { background: #f7f7fb; color: #14161f; border: 1px solid #e5e7f0; }
+      button[data-action="dismiss"]:hover { background: #eef0f7; }
+      .status { font-size: 13px; font-weight: 600; }
+      .status.ok { color: #16a34a; }
+      .status.error { color: #dc2626; font-weight: 400; }
+    </style>
+    <div class="card">
+      <div class="head">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Save to Passvault?</span>
+      </div>
+      <div class="detail"><strong>${candidate.uri}</strong> &middot; ${candidate.username || "(no username)"}</div>
+      <div class="row">
+        <button data-action="save" type="button">Save</button>
+        <button data-action="dismiss" type="button">Not now</button>
+      </div>
+    </div>
   `;
-  bar.querySelector('[data-action="dismiss"]').addEventListener("click", () => bar.remove());
-  bar.querySelector('[data-action="save"]').addEventListener("click", async () => {
+  root.querySelector('[data-action="dismiss"]').addEventListener("click", () => host.remove());
+  root.querySelector('[data-action="save"]').addEventListener("click", async () => {
+    const card = root.querySelector(".card");
     try {
       await sendMessage({ type: "PV_SAVE_LOGIN", item: candidate });
-      bar.textContent = "Saved.";
-      setTimeout(() => bar.remove(), 1200);
+      card.innerHTML = '<div class="status ok">✓ Saved to Passvault</div>';
+      setTimeout(() => host.remove(), 1400);
     } catch (err) {
-      bar.textContent = "Couldn't save: " + err.message;
+      card.innerHTML = `<div class="status error">Couldn't save: ${err.message}</div>`;
     }
   });
-  document.documentElement.appendChild(bar);
+  document.documentElement.appendChild(host);
 }
 
 // A REAL (non-SPA) login form navigates the tab the instant it's
