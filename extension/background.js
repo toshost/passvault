@@ -219,7 +219,12 @@ async function handleMessage(msg) {
     case "PV_GET_STATE": {
       const serverUrl = await getServerUrl();
       const session = await getSession();
-      return { configured: !!serverUrl, locked: !session.vaultKeyB64, email: session.email };
+      return {
+        configured: !!serverUrl,
+        locked: !session.vaultKeyB64,
+        email: session.email,
+        itemCount: (session.items || []).length,
+      };
     }
     case "PV_GET_SERVER_URL":
       return { serverUrl: await getServerUrl() };
@@ -249,6 +254,14 @@ async function handleMessage(msg) {
       const session = await getSession();
       if (!session.vaultKeyB64) return { locked: true, items: [] };
       return { locked: false, items: matchesForHost(session.items, msg.host) };
+    }
+    case "PV_GET_ALL_ITEMS": {
+      const session = await getSession();
+      if (!session.vaultKeyB64) return { locked: true, items: [] };
+      const items = [...(session.items || [])].sort((a, b) =>
+        (a.name || a.uri).localeCompare(b.name || b.uri)
+      );
+      return { locked: false, items };
     }
     case "PV_SAVE_LOGIN":
       await saveLogin(msg.item);

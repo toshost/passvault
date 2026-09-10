@@ -62,6 +62,10 @@ requested permission. Use these:
   opened (a direct user action), to show logins matching that specific
   site and to know which server-permission origin to display in options.
   Never used to read tabs the user hasn't directly interacted with.
+- **`clipboardWrite`** — Lets the "copy username/password" buttons in the
+  popup's vault list write to the clipboard, for sites the content script
+  can't autofill (e.g. a native app's web view). Only fires on a direct
+  click; nothing is copied automatically.
 - **`optional_host_permissions` (`*://*/*`, requested narrowly per-origin
   at setup time)** — The extension needs to reach the ONE self-hosted
   server URL the user enters in options, which can be any origin since
