@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Passvault</title>
+<style>
+  :root {
+    --surface: #ffffff; --surface-2: #f8f9fc; --border: #e5e7f0;
+    --text: #14161f; --text-muted: #6b7080; --primary: #4f46e5; --danger: #dc2626;
+    --radius: 10px; --radius-sm: 7px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: #171a24; --surface-2: #1d212c; --border: #2a2e3a;
+      --text: #eef0f6; --text-muted: #9297a8; --primary: #818cf8; --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    width: 320px; margin: 0; padding: 14px;
+    background: var(--surface); color: var(--text);
+    font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 14px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  h1 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+  h1 .dot.unlocked { background: #16a34a; }
+  label { display: block; margin: 10px 0 4px; color: var(--text-muted); font-size: 12px; }
+  input {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-2); color: var(--text); font-size: 13px;
+  }
+  button {
+    border: none; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px;
+    font-weight: 600; cursor: pointer; margin-top: 10px;
+  }
+  button.primary { background: var(--primary); color: #fff; width: 100%; }
+  button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .error { color: var(--danger); font-size: 12px; margin-top: 8px; }
+  .hint { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+  a { color: var(--primary); }
+  .match {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .match:last-child { border-bottom: none; }
+  .match-name { font-weight: 600; }
+  .match-username { color: var(--text-muted); font-size: 12px; }
+  .match button { margin-top: 0; padding: 5px 9px; }
+  .row { display: flex; gap: 8px; }
+  .row button { flex: 1; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+  <div id="view-loading">Loading…</div>
+
+  <div id="view-setup" hidden>
+    <h1><span class="dot"></span> Passvault</h1>
+    <p class="hint">No server configured yet.</p>
+    <button class="primary" id="open-options-btn">Set up your server</button>
+  </div>
+
+  <div id="view-login" hidden>
+    <h1><span class="dot"></span> Passvault</h1>
+    <form id="login-form">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" autocomplete="username" required>
+      <label for="login-password">Master password</label>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+      <button class="primary" type="submit">Unlock</button>
+    </form>
+    <p class="error" id="login-error" hidden></p>
+  </div>
+
+  <div id="view-2fa" hidden>
+    <h1><span class="dot"></span> Passvault</h1>
+    <form id="twofa-form">
+      <label for="twofa-code">2FA code</label>
+      <input type="text" id="twofa-code" inputmode="numeric" placeholder="123456" autocomplete="one-time-code" required>
+      <button class="primary" type="submit">Verify</button>
+    </form>
+    <p class="error" id="twofa-error" hidden></p>
+  </div>
+
+  <div id="view-unlocked" hidden>
+    <h1><span class="dot unlocked"></span> <span id="unlocked-email"></span></h1>
+    <div id="matches-list"></div>
+    <p class="hint" id="no-matches-hint" hidden>No saved logins for this site.</p>
+    <div class="row">
+      <button class="secondary" id="open-vault-btn">Open full vault</button>
+      <button class="secondary" id="lock-btn">Lock</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

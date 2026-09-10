@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Passvault Send</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234f46e5' d='M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-1.2 14.5-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4-6.3 6.3Z'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f6fa; --surface: #ffffff; --border: #e5e7f0; --text: #14161f;
+    --text-muted: #6b7080; --primary: #4f46e5; --primary-hover: #4338ca;
+    --danger: #dc2626; --danger-tint: #fef2f2; --success: #16a34a;
+    --radius: 14px; --radius-sm: 9px;
+    --shadow: 0 1px 2px rgba(20,22,31,.04), 0 8px 24px rgba(20,22,31,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1016; --surface: #171a24; --border: #2a2e3a; --text: #eef0f6;
+      --text-muted: #9297a8; --primary: #818cf8; --primary-hover: #a5b0fb;
+      --danger: #f87171; --danger-tint: #2c1c1e; --success: #4ade80;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font: 15px/1.5 -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+    background: var(--bg); color: var(--text); margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 460px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+  .sub { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
+  [data-state] { display: block; }
+  [hidden] { display: none !important; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  input[type="password"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text); font: inherit; margin-bottom: 12px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 16px; border: none; border-radius: var(--radius-sm); font: inherit; font-weight: 600;
+    cursor: pointer; background: var(--primary); color: #fff; width: 100%;
+  }
+  .btn:hover { background: var(--primary-hover); }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 8px; }
+  .error { background: var(--danger-tint); color: var(--danger); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+  .info { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+  .file-row { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 14px; }
+  .file-name { font-weight: 600; word-break: break-all; }
+  .file-size { color: var(--text-muted); font-size: 13px; }
+  textarea {
+    width: 100%; min-height: 140px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text); font: 13px/1.5 ui-monospace, monospace; resize: vertical; margin-bottom: 12px;
+  }
+  .hint { color: var(--text-muted); font-size: 12px; margin-top: 14px; text-align: center; }
+  .spinner { text-align: center; color: var(--text-muted); padding: 20px 0; }
+  .copied-tag { color: var(--success); font-size: 13px; margin-left: 8px; }
+  .copied-tag-error { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path fill="var(--primary)" d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-1.2 14.5-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg>
+    Passvault Send
+  </div>
+  <p class="sub">Someone shared something with you, end-to-end encrypted. The decryption key was never sent to or stored on the server &mdash; it lives only in this link.</p>
+
+  <div data-state="loading" class="spinner">Loading&hellip;</div>
+
+  <div data-state="invalid" hidden>
+    <p class="error">This link is missing its decryption key, so nothing here can be decrypted. Make sure you copied the whole link, including everything after the <code>#</code>.</p>
+  </div>
+
+  <div data-state="error" hidden>
+    <p class="error" id="error-text"></p>
+  </div>
+
+  <div data-state="unavailable" hidden>
+    <p class="info" id="unavailable-text"></p>
+    <p class="hint">Reload this page after that time to open it.</p>
+  </div>
+
+  <form data-state="password" hidden id="password-form">
+    <label for="send-password">This Send is password-protected</label>
+    <input type="password" id="send-password" placeholder="Enter the password" required autocomplete="off">
+    <p class="error" id="password-error" hidden></p>
+    <button type="submit" class="btn">Unlock</button>
+  </form>
+
+  <div data-state="text" hidden>
+    <textarea id="text-output" readonly></textarea>
+    <button type="button" class="btn" id="copy-text-btn">Copy to clipboard</button>
+  </div>
+
+  <div data-state="file" hidden>
+    <div class="file-row">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path stroke="var(--primary)" stroke-width="2" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path stroke="var(--primary)" stroke-width="2" d="M14 3v5h5"/></svg>
+      <div>
+        <div class="file-name" id="file-name"></div>
+        <div class="file-size" id="file-size"></div>
+      </div>
+    </div>
+    <button type="button" class="btn" id="download-btn">Download and decrypt</button>
+  </div>
+</div>
+
+<script type="module" src="send.js"></script>
+</body>
+</html>

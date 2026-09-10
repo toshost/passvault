@@ -1,0 +1,22 @@
+    # TLS/HSTS/server_name go in the enclosing server block. passvault-server
+    # listens on 127.0.0.1:8098 only (see passvault.env.example) — nginx is
+    # the only thing that should ever reach it directly.
+    location / {
+        proxy_pass http://127.0.0.1:8098;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # /v1/admin/ is gated by PASSVAULT_ADMIN_TOKEN in the app itself; if you
+    # only ever administer this instance from a known IP range, restricting
+    # it here too is cheap defense in depth (optional — remove the allow/
+    # deny lines if you'd rather manage it purely via the admin token).
+    location /v1/admin/ {
+        # allow YOUR_ADMIN_IP;
+        # deny all;
+        proxy_pass http://127.0.0.1:8098;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }

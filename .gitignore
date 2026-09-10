@@ -1,0 +1,6 @@
+/bin/
+vault-server
+tos-vault
+*.env
+!*.env.example
+.DS_Store

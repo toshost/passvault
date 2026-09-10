@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Passvault</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234f46e5' d='M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-1.2 14.5-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4-6.3 6.3Z'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#4f46e5">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface-2: #f8f9fc;
+    --sidebar: #ffffff;
+    --border: #e5e7f0;
+    --text: #14161f;
+    --text-muted: #6b7080;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-tint: #eef0ff;
+    --danger: #dc2626;
+    --danger-tint: #fef2f2;
+    --success: #16a34a;
+    --radius: 14px;
+    --radius-sm: 9px;
+    --shadow: 0 1px 2px rgba(20,22,31,.04), 0 8px 24px rgba(20,22,31,.06);
+  }
+  /* This is a deliberately white/light-first design (the user asked for a
+     white modern dashboard specifically) — dark mode still gets a real,
+     distinct palette rather than being left to look washed out, but light
+     is the primary target here, not an afterthought. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1016;
+      --surface: #171a24;
+      --surface-2: #1d212c;
+      --sidebar: #12141c;
+      --border: #2a2e3a;
+      --text: #eef0f6;
+      --text-muted: #9297a8;
+      --primary: #818cf8;
+      --primary-hover: #a5b0fb;
+      --primary-tint: #23253a;
+      --danger: #f87171;
+      --danger-tint: #2c1c1e;
+      --success: #4ade80;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font: 15px/1.5 -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  /* --- Auth screen --- */
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+  .brand svg { flex: none; }
+  .tagline { color: var(--text-muted); font-size: 13px; margin-left: 4px; }
+
+  .auth-wrap { min-height: calc(100vh - 65px); display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+  .auth-card {
+    width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px;
+  }
+  .auth-intro { text-align: center; margin-bottom: 20px; }
+  .auth-intro p { margin: 0; color: var(--text-muted); font-size: 13px; }
+
+  .tabs { display: flex; background: var(--surface-2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 20px; }
+  .tabs[hidden] { display: none; }
+  .tab {
+    flex: 1; text-align: center; padding: 8px 0; border-radius: 6px; cursor: pointer;
+    font-weight: 600; font-size: 13.5px; color: var(--text-muted); user-select: none;
+  }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+  form { display: flex; flex-direction: column; gap: 14px; }
+  label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%; padding: 10px 12px; font: inherit; font-size: 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-2); color: var(--text);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); background: var(--surface); }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: .7; }
+  .hint { font-size: 12px; color: var(--text-muted); margin-top: -6px; }
+
+  button { font: inherit; cursor: pointer; }
+  .btn {
+    padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-weight: 600; font-size: 14px;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .btn-block { width: 100%; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn-danger:hover { background: var(--danger); opacity: .9; }
+  .btn-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; padding: 0; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
+  }
+  .btn-icon:hover { background: var(--surface-2); color: var(--text); }
+  .btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-tint); }
+
+  #auth-error {
+    background: var(--danger-tint); color: var(--danger); border: 1px solid var(--danger);
+    border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px;
+  }
+  form[hidden] { display: none; }
+
+  /* --- Dashboard shell --- */
+  #vault-view:not([hidden]) { display: block; }
+  .app-shell { display: flex; align-items: stretch; min-height: 100vh; }
+
+  #offline-banner {
+    background: var(--surface-2); color: var(--text-muted); border-bottom: 1px solid var(--border);
+    padding: 8px 16px; font-size: 13px; text-align: center;
+  }
+
+  .sidebar {
+    width: 240px; flex: none; background: var(--sidebar); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 22px 14px;
+    position: sticky; top: 0; align-self: flex-start; max-height: 100vh; overflow-y: auto;
+  }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; padding: 0 10px; margin-bottom: 26px; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--radius-sm);
+    color: var(--text-muted); font-weight: 600; font-size: 14px; text-align: left; border: none;
+    background: none; width: 100%;
+  }
+  .nav-item svg { flex: none; }
+  .nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .nav-item.active { background: var(--primary-tint); color: var(--primary); }
+
+  .sidebar-footer { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px; }
+  .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 0 8px 12px; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--primary-tint); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex: none;
+  }
+  .who-email { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who-sub { font-size: 11.5px; color: var(--text-muted); }
+
+  .main { flex: 1; min-width: 0; padding: 26px 32px 60px; }
+  .main-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .greeting h1 { font-size: 21px; margin: 0 0 4px; }
+  .greeting p { margin: 0; color: var(--text-muted); font-size: 13px; }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+  .search-input { width: 220px; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 26px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat-value { font-size: 22px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card-pad { padding: 20px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 10px; }
+
+  .view[hidden] { display: none; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+  .pill {
+    padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-muted); font-size: 13px; font-weight: 600;
+  }
+  .pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  #items, #shared-with-me-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+  #shared-with-me-list { margin-top: 12px; }
+  #authenticator-list, #folder-list, #send-list, #emergency-by-me-list, #emergency-to-me-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .item { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; }
+  .item-icon {
+    flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--primary-tint); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
+  }
+  .item-main { flex: 1; min-width: 0; }
+  .item-name { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-username { color: var(--text-muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-actions { display: flex; gap: 6px; flex: none; margin-left: auto; }
+  .item-detail {
+    flex-basis: 100%; order: 3; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 8px 10px; margin-top: 4px;
+    word-break: break-word; white-space: pre-wrap;
+  }
+
+  .totp-box { flex-basis: 100%; order: 4; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; margin-top: 6px; }
+  .totp-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; font-weight: 700;
+    letter-spacing: .06em; color: var(--primary);
+  }
+  .totp-track { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .totp-bar { height: 100%; background: var(--primary); transition: width 1s linear; }
+  .copied-tag { font-size: 10px; color: var(--success); }
+  .copied-tag-error { color: var(--danger); }
+
+  .attachments-panel { flex-basis: 100%; order: 5; margin-top: 8px; }
+  .attachments-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .attachment-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px;
+  }
+  .attach-upload-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--primary); cursor: pointer; font-weight: 600; }
+
+  .share-panel { flex-basis: 100%; order: 6; margin-top: 8px; }
+  .share-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .share-add-row { display: flex; gap: 6px; }
+  .share-add-row input { flex: 1; }
+  .share-add-row .btn { padding: 8px 14px; font-size: 13px; }
+
+  .emergency-panel { flex-basis: 100%; order: 6; margin-top: 8px; }
+  .emergency-vault-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .emergency-vault-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .audit-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-row .audit-meta { color: var(--text-muted); font-size: 12px; text-align: right; flex: none; }
+  .takeover-warning { background: var(--danger-tint); color: var(--danger); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-top: 8px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); grid-column: 1 / -1; }
+  .empty-state svg { margin-bottom: 10px; opacity: .5; }
+
+  #add-folder-form { flex-direction: row; align-items: flex-start; }
+  #add-folder-form input { flex: 1; }
+  #folder-list:empty::after { content: "No folders yet."; color: var(--text-muted); font-size: 13px; }
+  .folder-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .folder-row:last-child { border-bottom: none; }
+  #security-weak-list:empty::after, #security-reused-list:empty::after, #security-compromised-list:empty::after {
+    content: "Nothing to show yet."; color: var(--text-muted); font-size: 13px;
+  }
+
+  .generator-output-row { display: flex; align-items: center; gap: 10px; }
+  .generator-output {
+    flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 19px; font-weight: 700;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px 16px; word-break: break-all; letter-spacing: .02em; min-height: 1.4em;
+  }
+
+  footer.foot { text-align: center; color: var(--text-muted); font-size: 12px; padding: 24px 0; }
+
+  /* --- Add item modal --- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15,17,23,.5); display: flex;
+    align-items: flex-start; justify-content: center; padding: 48px 16px; overflow-y: auto; z-index: 50;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 600px; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 15px; }
+  .modal-body { padding: 20px; }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+  .pw-row { display: flex; gap: 6px; }
+  .pw-row input { flex: 1; }
+  .hint-inline { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+
+  .gen-options { margin-top: 10px; }
+  .gen-options summary { cursor: pointer; font-size: 12.5px; color: var(--text-muted); list-style: none; }
+  .gen-options summary::-webkit-details-marker { display: none; }
+  .gen-options summary::before { content: "▸ "; }
+  .gen-options[open] summary::before { content: "▾ "; }
+  .gen-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--text-muted); }
+  .gen-row label { display: flex; align-items: center; gap: 5px; font-weight: 400; text-transform: none; letter-spacing: 0; margin: 0; }
+  .gen-len input { width: 56px; padding: 4px 6px; margin-left: 4px; }
+  .gen-row input[type="checkbox"] { width: auto; }
+
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar {
+      width: 100%; flex-direction: row; align-items: center; padding: 12px 16px;
+      overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch;
+      position: static; max-height: none;
+    }
+    .sidebar-brand { margin-bottom: 0; flex: none; }
+    .sidebar-nav { flex-direction: row; flex: none; }
+    .nav-item { white-space: nowrap; }
+    /* Stays reachable rather than disappearing — only the redundant email
+       card is dropped (the page header already greets the user by name);
+       Log out is pinned to the end of the scrollable row so it's never
+       the part that scrolls out of view. */
+    .sidebar-footer { border-top: none; margin: 0 0 0 auto; padding: 0; flex: none; display: flex; }
+    .sidebar-user { display: none; }
+    .sidebar-footer .btn { width: auto; padding: 8px 12px; }
+    .main { padding: 20px 16px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="auth-view">
+  <div class="topbar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path fill="var(--primary)" d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-1.2 14.5-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg>
+      Passvault
+    </div>
+    <span class="tagline">Free, open-source, self-hosted &mdash; zero-knowledge password manager</span>
+  </div>
+
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-intro">
+        <p>The server never sees your master password or vault key &mdash; everything is encrypted in your browser first.</p>
+      </div>
+
+      <div id="passkey-unlock-row" hidden>
+        <button type="button" class="btn btn-primary btn-block" id="passkey-unlock-btn">Unlock with passkey</button>
+        <p class="hint-inline" style="text-align:center;margin-top:6px">
+          <strong id="passkey-unlock-email"></strong>
+        </p>
+        <p class="hint-inline" style="text-align:center;margin-top:12px">
+          <a href="#" id="passkey-use-password-link">Use master password instead</a>
+        </p>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" id="tab-login" data-target="login-form">Log in</div>
+        <div class="tab" id="tab-register" data-target="register-form">Sign up</div>
+      </div>
+
+      <p id="auth-error" hidden></p>
+
+      <form id="login-form">
+        <div>
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" required autocomplete="username">
+        </div>
+        <div>
+          <label for="login-password">Master password</label>
+          <input type="password" id="login-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        <p class="hint-inline" style="text-align:center;margin-top:12px">
+          <a href="#" id="forgot-password-link">Forgot your master password?</a>
+        </p>
+      </form>
+
+      <div id="recovery-flow" hidden>
+        <p class="hint">Recover access using your account recovery kit &mdash; this resets your master password using the same encrypted vault, so nothing is lost.</p>
+
+        <div id="recovery-step-verify">
+          <label for="recovery-email">Email</label>
+          <input type="email" id="recovery-email" placeholder="you@example.com" autocomplete="username">
+          <label for="recovery-code-input" style="margin-top:8px">Recovery code</label>
+          <input type="text" id="recovery-code-input" placeholder="xxxx-xxxx-xxxx-xxxx-...">
+          <p id="recovery-verify-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+          <button type="button" class="btn btn-primary btn-block" id="recovery-verify-btn" style="margin-top:10px">Continue</button>
+        </div>
+
+        <div id="recovery-step-finish" hidden>
+          <div id="recovery-2fa-row" hidden>
+            <label for="recovery-2fa-code">This account also has 2FA enabled &mdash; enter a code</label>
+            <input type="text" id="recovery-2fa-code" placeholder="123456" inputmode="numeric">
+          </div>
+          <label for="recovery-new-password" style="margin-top:8px">New master password</label>
+          <input type="password" id="recovery-new-password" autocomplete="new-password">
+          <label for="recovery-new-password-confirm" style="margin-top:8px">Confirm new master password</label>
+          <input type="password" id="recovery-new-password-confirm" autocomplete="new-password">
+          <p id="recovery-finish-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+          <button type="button" class="btn btn-primary btn-block" id="recovery-finish-btn" style="margin-top:10px">Set new password and log in</button>
+        </div>
+
+        <p class="hint-inline" style="text-align:center;margin-top:12px">
+          <a href="#" id="recovery-cancel-link">Back to log in</a>
+        </p>
+      </div>
+
+      <form id="login-2fa-form" hidden>
+        <p class="hint">Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
+        <div>
+          <label for="login-2fa-code">Code</label>
+          <input type="text" id="login-2fa-code" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" required autofocus>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Verify</button>
+        <p class="hint-inline" style="text-align:center;margin-top:12px">
+          <a href="#" id="login-2fa-cancel-link">Use a different account</a>
+        </p>
+      </form>
+
+      <form id="register-form" hidden>
+        <div>
+          <label for="reg-invite-token">Invite token</label>
+          <input type="text" id="reg-invite-token" placeholder="Leave blank if open signup is enabled" autocomplete="off">
+        </div>
+        <div>
+          <label for="reg-email">Email</label>
+          <input type="email" id="reg-email" placeholder="you@example.com" required autocomplete="username">
+        </div>
+        <div>
+          <label for="reg-password">Master password</label>
+          <input type="password" id="reg-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required autocomplete="new-password">
+        </div>
+        <div>
+          <label for="reg-password-confirm">Confirm master password</label>
+          <input type="password" id="reg-password-confirm" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required autocomplete="new-password">
+        </div>
+        <p class="hint">Choose carefully &mdash; there is no "forgot password" that can recover your vault without it.</p>
+        <button type="submit" class="btn btn-primary btn-block">Create vault</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="foot">Passvault &mdash; AGPL-3.0 licensed, self-hosted, zero-knowledge.</footer>
+</div>
+
+<div id="vault-view" hidden>
+  <div id="offline-banner" hidden>You're offline &mdash; showing your last synced vault. Changes won't be saved until you're back online.</div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path fill="var(--primary)" d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-1.2 14.5-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg>
+        Passvault
+      </div>
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-item active" data-nav="vault">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+          Vault
+        </button>
+        <button type="button" class="nav-item" data-nav="authenticator">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3.5 2"/></svg>
+          Authenticator
+        </button>
+        <button type="button" class="nav-item" data-nav="folders">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 6a1 1 0 0 1 1-1h4l2 2h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6Z"/></svg>
+          Folders
+        </button>
+        <button type="button" class="nav-item" data-nav="generator">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 2v6h-6M3 22v-6h6M2.5 9a9.5 9.5 0 0 1 16-4.5L21 8M22 15a9.5 9.5 0 0 1-16 4.5L3 16"/></svg>
+          Generator
+        </button>
+        <button type="button" class="nav-item" data-nav="security">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 2 4 5v6c0 5 3.4 8.9 8 10 4.6-1.1 8-5 8-10V5l-8-3Z"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m9 12 2 2 4-4"/></svg>
+          Security Check
+        </button>
+        <button type="button" class="nav-item" data-nav="send">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>
+          Send
+        </button>
+        <button type="button" class="nav-item" data-nav="emergency">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          Emergency Access
+        </button>
+        <button type="button" class="nav-item" data-nav="importexport">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          Import / Export
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="vault-avatar">?</div>
+          <div style="min-width:0">
+            <div class="who-email" id="vault-email"></div>
+            <div class="who-sub">Personal vault</div>
+          </div>
+        </div>
+        <button id="logout-btn" class="btn btn-block">Log out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="main-topbar">
+        <div class="greeting">
+          <h1 id="greeting-text">Welcome back</h1>
+          <p id="greeting-sub"></p>
+        </div>
+        <div class="topbar-actions">
+          <input type="search" id="vault-search" class="search-input" placeholder="Search vault&hellip;">
+          <button type="button" id="open-add-item-btn" class="btn btn-primary">+ Add Item</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total items</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-login">0</div><div class="stat-label">Logins</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-note">0</div><div class="stat-label">Notes</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-card">0</div><div class="stat-label">Cards</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-identity">0</div><div class="stat-label">Identities</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-totp">0</div><div class="stat-label">TOTP codes</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-ssh_key">0</div><div class="stat-label">SSH keys</div></div>
+      </div>
+
+      <!-- Vault view -->
+      <section id="view-vault" class="view">
+        <div class="pill-row" id="type-filters">
+          <button type="button" class="pill active" data-type-key="all">All</button>
+          <button type="button" class="pill" data-type-key="login">Logins</button>
+          <button type="button" class="pill" data-type-key="note">Notes</button>
+          <button type="button" class="pill" data-type-key="card">Cards</button>
+          <button type="button" class="pill" data-type-key="identity">Identities</button>
+          <button type="button" class="pill" data-type-key="totp">TOTP</button>
+          <button type="button" class="pill" data-type-key="ssh_key">SSH keys</button>
+        </div>
+        <div class="pill-row" id="folder-filters"></div>
+        <ul id="items"></ul>
+        <div class="empty-state" id="empty-state" hidden>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path fill="currentColor" d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z"/></svg>
+          <div id="empty-state-text">Your vault is empty. Click "+ Add Item" to get started.</div>
+        </div>
+
+        <div id="shared-with-me-section" hidden>
+          <p class="section-title" style="margin-top:28px">Shared with you</p>
+          <ul id="shared-with-me-list"></ul>
+        </div>
+      </section>
+
+      <!-- Authenticator view -->
+      <section id="view-authenticator" class="view" hidden>
+        <div class="card card-pad">
+          <p class="section-title">Add a code</p>
+          <form id="add-totp-form">
+            <div class="field-row">
+              <div>
+                <label for="totp-name">Name</label>
+                <input type="text" id="totp-name" placeholder="e.g. GitHub" required>
+              </div>
+              <div>
+                <label for="totp-secret">TOTP secret</label>
+                <input type="text" id="totp-secret" placeholder="base32 key or otpauth:// URI" required autocomplete="off">
+              </div>
+            </div>
+            <p id="totp-form-error" class="hint" style="color:var(--danger)" hidden></p>
+            <button type="submit" class="btn btn-primary" style="align-self:flex-start">Add code</button>
+          </form>
+        </div>
+        <p class="section-title" style="margin-top:24px">Your codes</p>
+        <ul id="authenticator-list"></ul>
+        <div class="empty-state" id="authenticator-empty" hidden>
+          <div>No authenticator codes yet &mdash; add one above, or any Login item with a TOTP secret shows up here too.</div>
+        </div>
+      </section>
+
+      <!-- Folders view -->
+      <section id="view-folders" class="view" hidden>
+        <div class="card card-pad">
+          <p class="section-title">Add a folder</p>
+          <form id="add-folder-form">
+            <input type="text" id="new-folder-name" placeholder="New folder name" required>
+            <button type="submit" class="btn btn-primary">Add</button>
+          </form>
+        </div>
+        <p class="section-title" style="margin-top:24px">Your folders</p>
+        <ul id="folder-list"></ul>
+      </section>
+
+      <!-- Standalone generator view -->
+      <section id="view-generator" class="view" hidden>
+        <div class="card card-pad" style="max-width:480px">
+          <p class="section-title">Password generator</p>
+          <div class="generator-output-row">
+            <div id="generator-output" class="generator-output">&nbsp;</div>
+            <button type="button" class="btn-icon" id="generator-copy-btn" title="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+            </button>
+          </div>
+          <p id="generator-strength" class="hint-inline" style="margin-top:8px"></p>
+          <button type="button" class="btn btn-primary" id="generator-regenerate-btn" style="margin-top:14px">Regenerate</button>
+
+          <div class="gen-row" style="margin-top:18px; border-top:1px solid var(--border); padding-top:16px">
+            <label class="gen-len">Length <input type="number" id="gen2-length" min="8" max="64" value="20"></label>
+            <label><input type="checkbox" id="gen2-upper" checked> A-Z</label>
+            <label><input type="checkbox" id="gen2-lower" checked> a-z</label>
+            <label><input type="checkbox" id="gen2-digits" checked> 0-9</label>
+            <label><input type="checkbox" id="gen2-symbols" checked> #$%</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security check view -->
+      <section id="view-security" class="view" hidden>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-value" id="stat-sec-total">0</div><div class="stat-label">Logins checked</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-sec-secure">0</div><div class="stat-label">Secure</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-sec-weak">0</div><div class="stat-label">Weak</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-sec-reused">0</div><div class="stat-label">Reused</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-sec-compromised">0</div><div class="stat-label">Compromised</div></div>
+        </div>
+
+        <div class="card card-pad">
+          <p class="section-title">Two-factor authentication</p>
+          <p class="hint-inline">
+            Require a code from an authenticator app (or a recovery code) every time you log in
+            with your master password. This is separate from passkey unlock and doesn't affect an
+            already logged-in session.
+          </p>
+          <div id="twofa-disabled-state">
+            <button type="button" class="btn btn-primary" id="enable-2fa-btn" style="margin-top:10px">Enable two-factor authentication</button>
+          </div>
+          <div id="twofa-enabled-state" hidden>
+            <p class="hint-inline" style="margin-top:8px">Two-factor authentication is <strong>enabled</strong>. <span id="twofa-recovery-codes-remaining"></span></p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button type="button" class="btn" id="regenerate-recovery-codes-btn">Regenerate recovery codes</button>
+              <button type="button" class="btn btn-danger" id="disable-2fa-btn">Disable</button>
+            </div>
+          </div>
+
+          <div id="twofa-setup-panel" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <p class="hint-inline">Scan this into your authenticator app, or enter the secret manually:</p>
+            <p style="font-family:ui-monospace,monospace;font-size:14px;background:var(--surface-2);padding:8px 10px;border-radius:var(--radius-sm);word-break:break-all" id="twofa-setup-secret"></p>
+            <p class="hint-inline"><a id="twofa-setup-otpauth-link" href="#">Open in authenticator app</a> (works if you're viewing this on the same device as the app)</p>
+            <label for="twofa-setup-code" style="margin-top:8px">Enter the 6-digit code to confirm</label>
+            <input type="text" id="twofa-setup-code" inputmode="numeric" placeholder="123456" autocomplete="one-time-code">
+            <p id="twofa-setup-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <button type="button" class="btn btn-primary" id="twofa-setup-confirm-btn" style="margin-top:8px">Confirm and enable</button>
+          </div>
+
+          <div id="twofa-recovery-codes-panel" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <p class="takeover-warning">
+              Save these recovery codes somewhere safe &mdash; each works once, and this is the only
+              time they'll be shown. If you lose your authenticator AND these codes, you will be
+              permanently locked out (there is no password reset).
+            </p>
+            <div id="twofa-recovery-codes-list" style="font-family:ui-monospace,monospace;font-size:13px;background:var(--surface-2);padding:10px;border-radius:var(--radius-sm);margin-top:8px"></div>
+            <button type="button" class="btn btn-primary btn-block" id="twofa-recovery-codes-done-btn" style="margin-top:10px">I've saved these codes</button>
+          </div>
+
+          <div id="twofa-disable-panel" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <label for="twofa-disable-code">Enter a current code to confirm disabling 2FA</label>
+            <input type="text" id="twofa-disable-code" inputmode="numeric" placeholder="123456" autocomplete="one-time-code">
+            <p id="twofa-disable-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <button type="button" class="btn btn-danger" id="twofa-disable-confirm-btn" style="margin-top:8px">Disable two-factor authentication</button>
+          </div>
+
+          <div id="twofa-regenerate-panel" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <label for="twofa-regenerate-code">Enter a current code to confirm regenerating recovery codes</label>
+            <input type="text" id="twofa-regenerate-code" inputmode="numeric" placeholder="123456" autocomplete="one-time-code">
+            <p class="hint-inline">This invalidates all of your existing recovery codes.</p>
+            <p id="twofa-regenerate-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <button type="button" class="btn btn-primary" id="twofa-regenerate-confirm-btn" style="margin-top:8px">Regenerate recovery codes</button>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Email alias generation</p>
+          <p class="hint-inline">
+            Connect a <a href="https://simplelogin.io" target="_blank" rel="noopener">SimpleLogin</a>
+            account to generate a fresh email alias when creating a login, so the real site never
+            sees your actual email address. Your API key is encrypted the same way as the rest of
+            your vault; it only ever leaves your browser, in memory, for the single request that
+            creates a new alias.
+          </p>
+          <div id="email-alias-configured-state" hidden>
+            <p class="hint-inline" style="margin-top:8px">Connected to <strong id="email-alias-provider-label"></strong>.</p>
+            <button type="button" class="btn btn-danger" id="remove-email-alias-btn" style="margin-top:8px">Remove</button>
+          </div>
+          <div id="email-alias-setup-state">
+            <label for="email-alias-api-key" style="margin-top:8px">SimpleLogin API key</label>
+            <input type="password" id="email-alias-api-key" placeholder="Paste your API key" autocomplete="off">
+            <p id="email-alias-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <button type="button" class="btn btn-primary" id="save-email-alias-btn" style="margin-top:8px">Connect</button>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Account recovery kit</p>
+          <p class="hint-inline">
+            Passvault can't reset a forgotten master password &mdash; that's the whole point of
+            zero-knowledge encryption. This is the one way around permanent lockout: a one-time code
+            you write down or print and store somewhere safe (like a safe or a bank box), separate
+            from your devices.
+          </p>
+          <div id="recovery-kit-unconfigured-state">
+            <button type="button" class="btn btn-primary" id="create-recovery-kit-btn" style="margin-top:10px">Create a recovery kit</button>
+          </div>
+          <div id="recovery-kit-configured-state" hidden>
+            <p class="hint-inline" style="margin-top:8px">A recovery kit is set up for this account.</p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button type="button" class="btn" id="regenerate-recovery-kit-btn">Generate a new one</button>
+              <button type="button" class="btn btn-danger" id="remove-recovery-kit-btn">Remove</button>
+            </div>
+          </div>
+
+          <div id="recovery-kit-reveal-panel" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <p class="takeover-warning">
+              Write this down or print it and store it somewhere safe &mdash; this is the only time
+              it will be shown. Anyone who has both this code AND your email can reset your master
+              password, so treat it like a spare house key, not something you memorize.
+            </p>
+            <p style="font-family:ui-monospace,monospace;font-size:15px;background:var(--surface-2);padding:12px;border-radius:var(--radius-sm);word-break:break-all;text-align:center;margin-top:8px" id="recovery-kit-code"></p>
+            <button type="button" class="btn btn-primary btn-block" id="recovery-kit-done-btn" style="margin-top:10px">I've saved this code</button>
+          </div>
+
+          <div id="recovery-kit-reauth-panel" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <label for="recovery-kit-reauth-password">Confirm your master password to continue</label>
+            <input type="password" id="recovery-kit-reauth-password" autocomplete="current-password">
+            <div id="recovery-kit-reauth-2fa-row" hidden style="margin-top:8px">
+              <label for="recovery-kit-reauth-code">This account also has 2FA enabled &mdash; enter a code</label>
+              <input type="text" id="recovery-kit-reauth-code" placeholder="123456" inputmode="numeric" autocomplete="one-time-code">
+            </div>
+            <p id="recovery-kit-reauth-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button type="button" class="btn btn-primary" id="recovery-kit-reauth-confirm-btn">Confirm</button>
+              <button type="button" class="btn" id="recovery-kit-reauth-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Recent activity</p>
+          <p class="hint-inline">The last 200 security-relevant events on your account &mdash; logins, password/2FA changes, sharing, and more.</p>
+          <ul id="audit-log-list" style="list-style:none;padding:0;margin:12px 0 0;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></ul>
+          <p id="audit-log-empty" class="hint-inline" hidden>No activity recorded yet.</p>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Unlock with passkey</p>
+          <p class="hint-inline">
+            Skip retyping your master password on this device using Touch ID, Windows Hello, or a
+            security key. The passkey and the key it protects live only in this browser &mdash;
+            nothing is sent to or stored on the server, it isn't synced to your other devices, and
+            it doesn't replace your master password (still needed on a new device, or if this
+            browser's data is cleared).
+          </p>
+          <button type="button" class="btn btn-primary" id="enable-passkey-btn" style="margin-top:10px">Enable passkey unlock on this device</button>
+          <button type="button" class="btn" id="disable-passkey-btn" style="margin-top:10px" hidden>Disable passkey unlock on this device</button>
+          <p id="passkey-status" class="hint-inline" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Weak passwords</p>
+          <p class="hint-inline">Estimated from length and character variety &mdash; a real but simplified check, not a full crack-time model.</p>
+          <ul id="security-weak-list" style="list-style:none;padding:0;margin:12px 0 0"></ul>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Reused passwords</p>
+          <p class="hint-inline">Logins that share the exact same password &mdash; if one leaks, all of them are exposed.</p>
+          <ul id="security-reused-list" style="list-style:none;padding:0;margin:12px 0 0"></ul>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">Breach check</p>
+          <p class="hint-inline">
+            Checks each password against Have I Been Pwned's Pwned Passwords database using
+            k-anonymity: only a 5-character prefix of a SHA-1 hash ever leaves your browser &mdash;
+            never the password, never the full hash. This is the <strong>only</strong> feature in
+            Passvault that makes an external network request, and it only runs when you click the
+            button below.
+          </p>
+          <button type="button" class="btn btn-primary" id="check-breaches-btn" style="margin-top:10px">Check for breaches</button>
+          <p id="breach-check-status" class="hint-inline" style="margin-top:8px"></p>
+          <ul id="security-compromised-list" style="list-style:none;padding:0;margin:12px 0 0"></ul>
+        </div>
+      </section>
+
+      <!-- Send view -->
+      <section id="view-send" class="view" hidden>
+        <div class="card card-pad" style="max-width:560px">
+          <p class="section-title">New Send</p>
+          <p class="hint-inline">
+            Share text or a file with anyone via a one-time link &mdash; they don't need a
+            Passvault account. The decryption key travels only in the link itself (after the
+            <code>#</code>), never through the server, so even this server's operator can't read
+            the content.
+          </p>
+          <form id="send-create-form" style="margin-top:14px">
+            <div class="field-row">
+              <div>
+                <label for="send-type">Type</label>
+                <select id="send-type">
+                  <option value="text">Text</option>
+                  <option value="file">File</option>
+                </select>
+              </div>
+              <div>
+                <label for="send-label">Label (visible only to you)</label>
+                <input type="text" id="send-label" placeholder="e.g. Wifi password for Bob" required>
+              </div>
+            </div>
+
+            <div id="send-text-field" style="margin-top:12px">
+              <label for="send-text-content">Text to share</label>
+              <textarea id="send-text-content" placeholder="Paste or type what you want to share"></textarea>
+            </div>
+            <div id="send-file-field" style="margin-top:12px" hidden>
+              <label for="send-file-input">File (max 25MB)</label>
+              <input type="file" id="send-file-input">
+            </div>
+
+            <div class="field-row" style="margin-top:12px">
+              <div>
+                <label for="send-expires">Expires after</label>
+                <select id="send-expires">
+                  <option value="3600">1 hour</option>
+                  <option value="86400" selected>1 day</option>
+                  <option value="172800">2 days</option>
+                  <option value="259200">3 days</option>
+                  <option value="604800">7 days</option>
+                  <option value="2592000">30 days</option>
+                </select>
+              </div>
+              <div>
+                <label for="send-max-views">Max views (optional)</label>
+                <input type="number" id="send-max-views" min="1" placeholder="Unlimited until expiry">
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <label for="send-available">Don't unlock until <span class="hint-inline">(optional &mdash; scheduled reveal)</span></label>
+              <select id="send-available">
+                <option value="" selected>Available immediately</option>
+                <option value="3600">1 hour from now</option>
+                <option value="86400">1 day from now</option>
+                <option value="259200">3 days from now</option>
+                <option value="604800">7 days from now</option>
+              </select>
+            </div>
+            <div style="margin-top:12px">
+              <label for="send-password">Password (optional, extra protection)</label>
+              <input type="password" id="send-password" placeholder="Share this separately from the link" autocomplete="new-password">
+            </div>
+
+            <p id="send-create-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top:14px">Create Send</button>
+          </form>
+
+          <div id="send-result" hidden style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <label for="send-result-link">Share this link &mdash; it won't be shown again</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="send-result-link" readonly style="flex:1">
+              <button type="button" class="btn" id="send-copy-link-btn">Copy</button>
+            </div>
+            <button type="button" class="btn" id="send-create-another-btn" style="margin-top:10px">Create another</button>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">My Sends</p>
+          <ul id="send-list" style="margin-top:12px"></ul>
+          <p id="send-list-empty" class="hint-inline">You haven't created any Sends yet.</p>
+        </div>
+      </section>
+
+      <!-- Emergency Access view -->
+      <section id="view-emergency" class="view" hidden>
+        <div class="card card-pad" style="max-width:560px">
+          <p class="section-title">Add a trusted emergency contact</p>
+          <p class="hint-inline">
+            If you're ever unreachable, a trusted contact can request access to your vault. You
+            choose how long they must wait before it's automatically granted, and you can reject
+            any request while that clock is running.
+          </p>
+          <form id="emergency-invite-form" style="margin-top:14px">
+            <div class="field-row">
+              <div>
+                <label for="emergency-invite-email">Their email (must have a Passvault account)</label>
+                <input type="email" id="emergency-invite-email" required>
+              </div>
+              <div>
+                <label for="emergency-invite-type">Access type</label>
+                <select id="emergency-invite-type">
+                  <option value="view">View vault</option>
+                  <option value="takeover">Full takeover</option>
+                </select>
+              </div>
+            </div>
+            <label for="emergency-invite-wait">Wait period before auto-granting</label>
+            <select id="emergency-invite-wait">
+              <option value="0">No wait &mdash; grant as soon as I don't reject</option>
+              <option value="1">1 day</option>
+              <option value="7" selected>7 days</option>
+              <option value="14">14 days</option>
+              <option value="30">30 days</option>
+              <option value="90">90 days</option>
+            </select>
+            <p id="emergency-invite-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">Send invite</button>
+          </form>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">People I trust</p>
+          <ul id="emergency-by-me-list" style="margin-top:12px"></ul>
+          <p id="emergency-by-me-empty" class="hint-inline">You haven't added any emergency contacts yet.</p>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <p class="section-title">People who trust me</p>
+          <ul id="emergency-to-me-list" style="margin-top:12px"></ul>
+          <p id="emergency-to-me-empty" class="hint-inline">No one has designated you as their emergency contact yet.</p>
+        </div>
+      </section>
+
+      <!-- Import / Export view -->
+      <section id="view-importexport" class="view" hidden>
+        <div class="card card-pad" style="max-width:560px">
+          <p class="section-title">Export vault</p>
+          <p class="hint-inline">
+            Downloads a file containing every item in your vault, DECRYPTED. There's no way
+            around this &mdash; that's what makes it usable elsewhere. Store the file securely
+            and delete it once you're done, and never send it anywhere untrusted.
+          </p>
+          <label for="export-password" style="margin-top:8px">Confirm your master password to continue</label>
+          <input type="password" id="export-password" autocomplete="current-password">
+          <p id="export-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+          <button type="button" class="btn btn-primary" id="export-btn" style="margin-top:8px">Export vault as JSON</button>
+          <p id="export-status" class="hint-inline" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px;max-width:560px">
+          <p class="section-title">Import</p>
+          <p class="hint-inline">
+            Bring items in from Passvault, Bitwarden, or Chrome/Google Password Manager. Files
+            are parsed and encrypted entirely in your browser &mdash; the plaintext file never
+            touches the server.
+          </p>
+          <label for="import-format" style="margin-top:8px">Format</label>
+          <select id="import-format">
+            <option value="passvault">Passvault (JSON)</option>
+            <option value="bitwarden-json">Bitwarden (JSON)</option>
+            <option value="chrome-csv">Chrome / Google Password Manager (CSV)</option>
+          </select>
+          <label for="import-file" style="margin-top:8px">File</label>
+          <input type="file" id="import-file" accept=".json,.csv">
+          <p id="import-error" class="hint-inline" style="color:var(--danger)" hidden></p>
+
+          <div id="import-preview" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <p id="import-summary" class="hint-inline"></p>
+            <ul id="import-warnings" class="hint-inline" style="margin:6px 0 0;padding-left:18px"></ul>
+            <button type="button" class="btn btn-primary" id="import-confirm-btn" style="margin-top:10px">Import these items</button>
+          </div>
+
+          <div id="import-progress" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <p id="import-progress-text" class="hint-inline"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="foot">Passvault &mdash; AGPL-3.0 licensed, self-hosted, zero-knowledge.</footer>
+</div>
+
+<!-- Add item modal -->
+<div class="modal-backdrop" id="add-item-modal" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <span>Add item</span>
+      <button type="button" class="btn-icon" id="close-add-item-modal" title="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="add-item-form">
+        <div class="field-row">
+          <div>
+            <label for="item-type">Type</label>
+            <select id="item-type">
+              <option value="login" selected>Login</option>
+              <option value="note">Secure note</option>
+              <option value="card">Card</option>
+              <option value="identity">Identity</option>
+              <option value="ssh_key">SSH key</option>
+            </select>
+          </div>
+          <div>
+            <label for="item-name">Name</label>
+            <input type="text" id="item-name" placeholder="e.g. GitHub" required>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="item-folder">Folder</label>
+          <select id="item-folder">
+            <option value="">No folder</option>
+          </select>
+        </div>
+
+        <!-- Login -->
+        <div class="type-fields" data-type="login">
+          <div style="margin-top:12px">
+            <label for="item-uri">Website</label>
+            <input type="url" id="item-uri" placeholder="https://example.com" autocomplete="off">
+          </div>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="item-username">Username</label>
+              <div class="pw-row">
+                <input type="text" id="item-username" placeholder="e.g. octocat" autocomplete="off">
+                <button type="button" class="btn-icon" id="gen-alias-btn" title="Generate email alias (SimpleLogin)" hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m4 6 8 7 8-7"/></svg>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label for="item-password">Password</label>
+              <div class="pw-row">
+                <input type="text" id="item-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
+                <button type="button" class="btn-icon" id="gen-password-btn" title="Generate password">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 2v6h-6M3 22v-6h6M2.5 9a9.5 9.5 0 0 1 16-4.5L21 8M22 15a9.5 9.5 0 0 1-16 4.5L3 16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <details class="gen-options">
+            <summary>Password generator options</summary>
+            <div class="gen-row">
+              <label class="gen-len">Length <input type="number" id="gen-length" min="8" max="64" value="16"></label>
+              <label><input type="checkbox" id="gen-upper" checked> A-Z</label>
+              <label><input type="checkbox" id="gen-lower" checked> a-z</label>
+              <label><input type="checkbox" id="gen-digits" checked> 0-9</label>
+              <label><input type="checkbox" id="gen-symbols" checked> #$%</label>
+            </div>
+          </details>
+
+          <div style="margin-top:12px">
+            <label for="item-totp">TOTP secret <span class="hint-inline">(optional &mdash; paste the base32 key or otpauth:// URI)</span></label>
+            <input type="text" id="item-totp" placeholder="e.g. JBSWY3DPEHPK3PXP" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Secure note -->
+        <div class="type-fields" data-type="note" hidden>
+          <div style="margin-top:12px">
+            <label for="note-content">Note</label>
+            <textarea id="note-content" rows="4" placeholder="Anything you want to keep encrypted"></textarea>
+          </div>
+        </div>
+
+        <!-- Card -->
+        <div class="type-fields" data-type="card" hidden>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="card-holder">Cardholder name</label>
+              <input type="text" id="card-holder" placeholder="e.g. Jane Doe" autocomplete="off">
+            </div>
+            <div>
+              <label for="card-brand">Brand</label>
+              <select id="card-brand">
+                <option value="">Select&hellip;</option>
+                <option>Visa</option>
+                <option>Mastercard</option>
+                <option>Amex</option>
+                <option>Discover</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="card-number">Card number</label>
+              <input type="text" id="card-number" inputmode="numeric" autocomplete="off" placeholder="4111 1111 1111 1111">
+            </div>
+            <div>
+              <label for="card-cvv">Security code</label>
+              <input type="text" id="card-cvv" inputmode="numeric" autocomplete="off" placeholder="&bull;&bull;&bull;">
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="card-exp-month">Expiry month</label>
+              <input type="text" id="card-exp-month" placeholder="MM" maxlength="2" inputmode="numeric">
+            </div>
+            <div>
+              <label for="card-exp-year">Expiry year</label>
+              <input type="text" id="card-exp-year" placeholder="YYYY" maxlength="4" inputmode="numeric">
+            </div>
+          </div>
+        </div>
+
+        <!-- Identity -->
+        <div class="type-fields" data-type="identity" hidden>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="id-first-name">First name</label>
+              <input type="text" id="id-first-name" autocomplete="off">
+            </div>
+            <div>
+              <label for="id-last-name">Last name</label>
+              <input type="text" id="id-last-name" autocomplete="off">
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="id-email">Email</label>
+              <input type="email" id="id-email" autocomplete="off">
+            </div>
+            <div>
+              <label for="id-phone">Phone</label>
+              <input type="text" id="id-phone" autocomplete="off">
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <label for="id-address">Address</label>
+            <input type="text" id="id-address" autocomplete="off">
+          </div>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="id-city">City</label>
+              <input type="text" id="id-city" autocomplete="off">
+            </div>
+            <div>
+              <label for="id-state">State / Province</label>
+              <input type="text" id="id-state" autocomplete="off">
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="id-postal">Postal code</label>
+              <input type="text" id="id-postal" autocomplete="off">
+            </div>
+            <div>
+              <label for="id-country">Country</label>
+              <input type="text" id="id-country" autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <!-- SSH key -->
+        <div class="type-fields" data-type="ssh_key" hidden>
+          <div class="field-row" style="margin-top:12px">
+            <div>
+              <label for="ssh-key-type">Key type</label>
+              <select id="ssh-key-type">
+                <option value="Ed25519" selected>Ed25519</option>
+                <option value="RSA">RSA</option>
+                <option value="ECDSA">ECDSA</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="ssh-passphrase">Passphrase <span class="hint-inline">(optional)</span></label>
+              <input type="password" id="ssh-passphrase" autocomplete="new-password">
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <label for="ssh-public-key">Public key</label>
+            <textarea id="ssh-public-key" rows="2" placeholder="ssh-ed25519 AAAA... user@host"></textarea>
+          </div>
+          <div style="margin-top:12px">
+            <label for="ssh-private-key">Private key</label>
+            <textarea id="ssh-private-key" rows="6" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea>
+          </div>
+          <div style="margin-top:12px">
+            <label for="ssh-fingerprint">Fingerprint <span class="hint-inline">(optional)</span></label>
+            <input type="text" id="ssh-fingerprint" placeholder="SHA256:...">
+          </div>
+        </div>
+
+        <div class="type-fields" data-type="login card identity ssh_key" style="margin-top:12px">
+          <label for="item-notes">Notes</label>
+          <input type="text" id="item-notes" placeholder="Optional">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top:14px">Save item</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/hash-wasm/argon2.umd.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

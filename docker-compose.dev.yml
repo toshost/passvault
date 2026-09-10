@@ -1,0 +1,17 @@
+# Local development database only. Production runs Postgres via the OS
+# package on its own host (see README.md) — this compose file exists so
+# `go run ./cmd/passvault-server` has something to talk to without
+# installing Postgres on every dev machine.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: passvault
+      POSTGRES_PASSWORD: passvault_dev_only
+      POSTGRES_DB: passvault
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - passvault_pg_dev:/var/lib/postgresql/data
+volumes:
+  passvault_pg_dev:

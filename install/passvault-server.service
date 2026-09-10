@@ -1,0 +1,29 @@
+[Unit]
+Description=Passvault server
+After=network.target postgresql.service
+
+[Service]
+User=passvault
+Group=passvault
+WorkingDirectory=/opt/passvault
+ExecStart=/opt/passvault/bin/passvault-server
+EnvironmentFile=/opt/passvault/passvault.env
+Restart=always
+RestartSec=2
+# hardening — almost everything lives in Postgres, but passvault-server
+# DOES write two kinds of local state outside it: encrypted attachment
+# bytes and Send content (PASSVAULT_ATTACHMENTS_DIR/PASSVAULT_SENDS_DIR —
+# see passvault.env.example, both under this directory by default).
+# ProtectSystem=strict makes everything else here read-only, so those two
+# paths need an explicit carve-out below or the service fails on first
+# upload — update both lines if you point the env vars elsewhere.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/passvault/attachments /opt/passvault/sends
+AmbientCapabilities=
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

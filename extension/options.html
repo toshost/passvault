@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Passvault settings</title>
+<style>
+  :root {
+    --surface: #ffffff; --surface-2: #f8f9fc; --border: #e5e7f0;
+    --text: #14161f; --text-muted: #6b7080; --primary: #4f46e5; --danger: #dc2626; --good: #16a34a;
+    --radius-sm: 7px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: #171a24; --surface-2: #1d212c; --border: #2a2e3a;
+      --text: #eef0f6; --text-muted: #9297a8; --primary: #818cf8; --danger: #f87171; --good: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    max-width: 440px; margin: 40px auto; padding: 0 20px;
+    background: var(--surface); color: var(--text);
+    font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 18px; }
+  p.hint { color: var(--text-muted); font-size: 13px; }
+  label { display: block; margin: 16px 0 6px; font-weight: 600; }
+  input {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-2); color: var(--text); font-size: 14px;
+  }
+  button {
+    margin-top: 14px; border: none; border-radius: var(--radius-sm); padding: 9px 16px;
+    background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;
+  }
+  .msg { margin-top: 12px; font-size: 13px; }
+  .msg.error { color: var(--danger); }
+  .msg.ok { color: var(--good); }
+</style>
+</head>
+<body>
+  <h1>Passvault settings</h1>
+  <p class="hint">
+    Passvault is self-hosted — point this extension at your own instance.
+    The extension will ask your browser's permission to talk to that one
+    origin; it never gets access to any other site's data.
+  </p>
+  <label for="server-url">Server URL</label>
+  <input type="url" id="server-url" placeholder="https://your-instance.example.com/tpass" autocomplete="off">
+  <div>
+    <button id="save-btn">Save &amp; grant access</button>
+  </div>
+  <p class="msg" id="msg" hidden></p>
+  <script src="options.js"></script>
+</body>
+</html>
