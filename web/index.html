@@ -114,6 +114,23 @@
   .btn-icon:hover { background: var(--surface-2); color: var(--text); }
   .btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-tint); }
 
+  /* Custom tooltip for icon-only buttons — anchored to the button itself
+     via CSS, unlike the native title-attribute tooltip it replaces, whose
+     positioning is left entirely to the browser. */
+  .btn-icon[data-tip] { position: relative; }
+  .btn-icon[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute; left: 50%; bottom: calc(100% + 7px); transform: translateX(-50%) translateY(3px);
+    background: var(--text); color: var(--surface);
+    font-size: 11px; font-weight: 600; letter-spacing: .01em; white-space: nowrap;
+    padding: 5px 9px; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,.18);
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .12s ease, transform .12s ease;
+    z-index: 80;
+  }
+  .btn-icon[data-tip]:hover::after, .btn-icon[data-tip]:focus-visible::after {
+    opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+  }
+
   #auth-error {
     background: var(--danger-tint); color: var(--danger); border: 1px solid var(--danger);
     border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px;
@@ -560,7 +577,7 @@
           <p class="section-title">Password generator</p>
           <div class="generator-output-row">
             <div id="generator-output" class="generator-output">&nbsp;</div>
-            <button type="button" class="btn-icon" id="generator-copy-btn" title="Copy">
+            <button type="button" class="btn-icon" id="generator-copy-btn" aria-label="Copy" data-tip="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
             </button>
           </div>
@@ -945,8 +962,8 @@
 <div class="modal-backdrop" id="add-item-modal" hidden>
   <div class="modal">
     <div class="modal-header">
-      <span>Add item</span>
-      <button type="button" class="btn-icon" id="close-add-item-modal" title="Close">
+      <span id="add-item-modal-title">Add item</span>
+      <button type="button" class="btn-icon" id="close-add-item-modal" aria-label="Close" data-tip="Close">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
@@ -987,7 +1004,7 @@
               <label for="item-username">Username</label>
               <div class="pw-row">
                 <input type="text" id="item-username" placeholder="e.g. octocat" autocomplete="off">
-                <button type="button" class="btn-icon" id="gen-alias-btn" title="Generate email alias (SimpleLogin)" hidden>
+                <button type="button" class="btn-icon" id="gen-alias-btn" aria-label="Generate email alias (SimpleLogin)" data-tip="Generate email alias" hidden>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m4 6 8 7 8-7"/></svg>
                 </button>
               </div>
@@ -996,7 +1013,7 @@
               <label for="item-password">Password</label>
               <div class="pw-row">
                 <input type="text" id="item-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-                <button type="button" class="btn-icon" id="gen-password-btn" title="Generate password">
+                <button type="button" class="btn-icon" id="gen-password-btn" aria-label="Generate password" data-tip="Generate password">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 2v6h-6M3 22v-6h6M2.5 9a9.5 9.5 0 0 1 16-4.5L21 8M22 15a9.5 9.5 0 0 1-16 4.5L3 16"/></svg>
                 </button>
               </div>

@@ -152,11 +152,22 @@ function syncTypeFields() {
 }
 $("#item-type").addEventListener("change", syncTypeFields);
 
-// --- Add item modal -------------------------------------------------------
+// --- Add / edit item modal -------------------------------------------------
+// The same modal and form serve both: editingCipher is null for a fresh
+// "Add item", or {id, itemKey} while editing an existing one, in which
+// case submit re-wraps the SAME itemKey (no rotation needed for a normal
+// content edit) and sends it back with `id` set — the server already
+// treats a POST /v1/ciphers with `id` as an update (see
+// internal/api/cipher_handlers.go), this just wires the client up to it.
 
 const addItemModal = $("#add-item-modal");
+let editingCipher = null; // { id, itemKey } | null
+
 function openAddItemModal() {
   addItemModal.hidden = false;
+  $("#item-type").disabled = false;
+  $("#add-item-modal-title").textContent = "Add item";
+  editingCipher = null;
   // Fire-and-forget: only toggles whether the alias-generation button is
   // visible, not required for the modal to be usable.
   api("v1/settings/email-alias")
@@ -165,8 +176,69 @@ function openAddItemModal() {
     })
     .catch(() => {});
 }
+
+// TOTP-only ciphers are managed from the Authenticator tab (add-totp-form)
+// and have no representation in this form's type list, so editing one
+// here isn't offered — see the "totp" guard on the Edit button itself.
+function openEditItemModal(id, type, item, itemKey, folderId) {
+  addItemModal.hidden = false;
+  $("#add-item-modal-title").textContent = "Edit item";
+  editingCipher = { id, itemKey };
+  $("#item-type").value = type;
+  $("#item-type").disabled = true; // changing type mid-edit would leave the old fields orphaned in a shape they don't belong to
+  syncTypeFields();
+  $("#item-name").value = item.name || "";
+  $("#item-folder").value = folderId != null ? String(folderId) : "";
+  switch (type) {
+    case "login":
+      $("#item-uri").value = item.uri || "";
+      $("#item-username").value = item.username || "";
+      $("#item-password").value = item.password || "";
+      $("#item-totp").value = item.totp || "";
+      $("#item-notes").value = item.notes || "";
+      break;
+    case "note":
+      $("#note-content").value = item.notes || "";
+      break;
+    case "card":
+      $("#card-holder").value = item.cardholderName || "";
+      $("#card-brand").value = item.brand || "";
+      $("#card-number").value = item.number || "";
+      $("#card-cvv").value = item.cvv || "";
+      $("#card-exp-month").value = item.expMonth || "";
+      $("#card-exp-year").value = item.expYear || "";
+      $("#item-notes").value = item.notes || "";
+      break;
+    case "identity":
+      $("#id-first-name").value = item.firstName || "";
+      $("#id-last-name").value = item.lastName || "";
+      $("#id-email").value = item.email || "";
+      $("#id-phone").value = item.phone || "";
+      $("#id-address").value = item.address || "";
+      $("#id-city").value = item.city || "";
+      $("#id-state").value = item.state || "";
+      $("#id-postal").value = item.postalCode || "";
+      $("#id-country").value = item.country || "";
+      $("#item-notes").value = item.notes || "";
+      break;
+    case "ssh_key":
+      $("#ssh-key-type").value = item.keyType || "Ed25519";
+      $("#ssh-public-key").value = item.publicKey || "";
+      $("#ssh-private-key").value = item.privateKey || "";
+      $("#ssh-passphrase").value = item.passphrase || "";
+      $("#ssh-fingerprint").value = item.fingerprint || "";
+      $("#item-notes").value = item.notes || "";
+      break;
+  }
+  $("#item-username")?.focus();
+}
+
 function closeAddItemModal() {
   addItemModal.hidden = true;
+  $("#item-type").disabled = false;
+  editingCipher = null;
+  $("#add-item-form").reset();
+  syncTypeFields(); // reset() puts the type <select> back on "login" — resync which field groups show
 }
 $("#gen-alias-btn").addEventListener("click", async () => {
   const btn = $("#gen-alias-btn");
@@ -1276,7 +1348,7 @@ function renderAuthenticatorPanel() {
   let count = 0;
   for (const [id, entry] of itemsById) {
     if (!entry.item.totp) continue;
-    authEl.appendChild(renderItem(id, entry.type, entry.item, entry.itemKey));
+    authEl.appendChild(renderItem(id, entry.type, entry.item, entry.itemKey, entry.folderId));
     count++;
   }
   authEmpty.hidden = count > 0;
@@ -1290,7 +1362,7 @@ function renderVisibleItems() {
     if (typeof currentFolderFilter === "number" && entry.folderId !== currentFolderFilter) continue;
     if (currentTypeFilter !== "all" && entry.type !== currentTypeFilter) continue;
     if (currentSearchQuery && !(entry.item.name || "").toLowerCase().includes(currentSearchQuery)) continue;
-    itemsEl.appendChild(renderItem(id, entry.type, entry.item, entry.itemKey));
+    itemsEl.appendChild(renderItem(id, entry.type, entry.item, entry.itemKey, entry.folderId));
     count++;
   }
   emptyState.hidden = count > 0;
@@ -1326,7 +1398,7 @@ function renderFolderUI() {
   list.innerHTML = folders
     .map(
       (f) =>
-        `<li class="folder-row"><span>${escapeHTML(f.name)}</span><button type="button" class="btn-icon danger" data-folder-id="${f.id}" title="Delete folder">${TRASH_ICON}</button></li>`,
+        `<li class="folder-row"><span>${escapeHTML(f.name)}</span><button type="button" class="btn-icon danger" data-folder-id="${f.id}" aria-label="Delete folder" data-tip="Delete folder">${TRASH_ICON}</button></li>`,
     )
     .join("");
   for (const btn of list.querySelectorAll("[data-folder-id]")) {
@@ -1640,6 +1712,7 @@ function itemCopyValue(type, item) {
 }
 
 const EYE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>';
+const PENCIL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12.5 5.5 18 11 8 21H3v-5l9.5-10.5Z"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m15 3 3.5 3.5"/></svg>';
 const TRASH_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg>';
 const COPY_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
 const PAPERCLIP_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m21 12.5-8.5 8.5a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/></svg>';
@@ -1652,7 +1725,13 @@ function formatBytes(n) {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function renderItem(id, type, item, itemKey) {
+// Types the add/edit modal actually has a form for — a bare TOTP-only
+// cipher (added via the Authenticator tab's own form) has no field group
+// here, so it gets no Edit button rather than opening a modal that can't
+// represent it.
+const EDITABLE_TYPES = new Set(["login", "note", "card", "identity", "ssh_key"]);
+
+function renderItem(id, type, item, itemKey, folderId) {
   const li = document.createElement("li");
   li.className = "item card";
   const totpHTML = item.totp
@@ -1666,8 +1745,11 @@ function renderItem(id, type, item, itemKey) {
     type === "card" ? "Copy card number" : type === "identity" ? "Copy email" : type === "ssh_key" ? "Copy public key" : "Copy password";
   const copyBtnHTML =
     copyValue !== null
-      ? `<button class="btn-icon" data-action="copy" title="${copyLabel}" type="button">${COPY_ICON}</button>`
+      ? `<button class="btn-icon" data-action="copy" aria-label="${copyLabel}" data-tip="${copyLabel}" type="button">${COPY_ICON}</button>`
       : "";
+  const editBtnHTML = EDITABLE_TYPES.has(type)
+    ? `<button class="btn-icon" data-action="edit" aria-label="Edit" data-tip="Edit" type="button">${PENCIL_ICON}</button>`
+    : "";
   li.innerHTML = `
     <div class="item-icon">${TYPE_ICONS[type] || ""}</div>
     <div class="item-main">
@@ -1677,10 +1759,11 @@ function renderItem(id, type, item, itemKey) {
     ${totpHTML}
     <div class="item-actions">
       ${copyBtnHTML}
-      <button class="btn-icon" data-action="attachments" title="Attachments" type="button">${PAPERCLIP_ICON}</button>
-      <button class="btn-icon" data-action="share" title="Share" type="button">${SHARE_ICON}</button>
-      <button class="btn-icon" data-action="reveal" title="Show details" type="button">${EYE_ICON}</button>
-      <button class="btn-icon danger" data-action="delete" title="Delete" type="button">${TRASH_ICON}</button>
+      ${editBtnHTML}
+      <button class="btn-icon" data-action="attachments" aria-label="Attachments" data-tip="Attachments" type="button">${PAPERCLIP_ICON}</button>
+      <button class="btn-icon" data-action="share" aria-label="Share" data-tip="Share" type="button">${SHARE_ICON}</button>
+      <button class="btn-icon" data-action="reveal" aria-label="Show details" data-tip="Show details" type="button">${EYE_ICON}</button>
+      <button class="btn-icon danger" data-action="delete" aria-label="Delete" data-tip="Delete" type="button">${TRASH_ICON}</button>
     </div>
     <div class="item-detail" hidden></div>
     <div class="attachments-panel" hidden>
@@ -1719,6 +1802,9 @@ function renderItem(id, type, item, itemKey) {
     await api(`v1/ciphers/${id}`, { method: "DELETE" });
     await refreshItems();
   });
+  li.querySelector('[data-action="edit"]')?.addEventListener("click", () => {
+    openEditItemModal(id, type, item, itemKey, folderId);
+  });
   const totpBox = li.querySelector(".totp-box");
   if (totpBox) {
     totpBox.addEventListener("click", async () => {
@@ -1741,6 +1827,7 @@ function renderItem(id, type, item, itemKey) {
 function renderSharedItem(id, type, item, itemKey, ownerEmail) {
   const li = renderItem(id, type, item, itemKey);
   li.querySelector('[data-action="delete"]')?.remove();
+  li.querySelector('[data-action="edit"]')?.remove(); // edits belong to the owner's cipher, not the recipient's read-only view
   li.querySelector('[data-action="attachments"]')?.remove();
   li.querySelector('[data-action="share"]')?.remove();
   li.querySelector(".attachments-panel")?.remove();
@@ -1780,8 +1867,8 @@ function wireAttachments(li, cipherId, itemKey) {
       row.innerHTML = `
         <span>${escapeHTML(name)} <span class="hint-inline">(${formatBytes(a.size_bytes)})</span></span>
         <span style="display:flex;gap:4px">
-          <button type="button" class="btn-icon" data-dl title="Download">${DOWNLOAD_ICON}</button>
-          <button type="button" class="btn-icon danger" data-del title="Delete">${TRASH_ICON}</button>
+          <button type="button" class="btn-icon" data-dl aria-label="Download" data-tip="Download">${DOWNLOAD_ICON}</button>
+          <button type="button" class="btn-icon danger" data-del aria-label="Delete" data-tip="Delete">${TRASH_ICON}</button>
         </span>
       `;
       row.querySelector("[data-dl]").addEventListener("click", async () => {
@@ -1865,7 +1952,7 @@ function wireSharing(li, cipherId, itemKey) {
     for (const s of rows) {
       const row = document.createElement("div");
       row.className = "attachment-row";
-      row.innerHTML = `<span>${escapeHTML(s.email)}</span><button type="button" class="btn-icon danger" title="Unshare">${TRASH_ICON}</button>`;
+      row.innerHTML = `<span>${escapeHTML(s.email)}</span><button type="button" class="btn-icon danger" aria-label="Unshare" data-tip="Unshare">${TRASH_ICON}</button>`;
       row.querySelector("button").addEventListener("click", async () => {
         await api(`v1/shares/${s.id}`, { method: "DELETE" });
         await loadShares();
@@ -2039,9 +2126,9 @@ async function renderSendRow(send) {
       <div class="item-username">${formatExpiry(send.expires_at)} &middot; ${viewsText}${send.has_password ? " &middot; password-protected" : ""}${availableText}</div>
     </div>
     <div class="item-actions">
-      <button class="btn-icon" data-action="view" title="${viewTitle}" type="button">${viewIcon}</button>
-      <button class="btn-icon" data-action="copy-link" title="Copy link" type="button">${COPY_ICON}</button>
-      <button class="btn-icon danger" data-action="revoke" title="Revoke" type="button">${TRASH_ICON}</button>
+      <button class="btn-icon" data-action="view" aria-label="${viewTitle}" data-tip="${viewTitle}" type="button">${viewIcon}</button>
+      <button class="btn-icon" data-action="copy-link" aria-label="Copy link" data-tip="Copy link" type="button">${COPY_ICON}</button>
+      <button class="btn-icon danger" data-action="revoke" aria-label="Revoke" data-tip="Revoke" type="button">${TRASH_ICON}</button>
     </div>
     <div class="item-detail" hidden></div>
   `;
@@ -2488,15 +2575,14 @@ $("#add-item-form").addEventListener("submit", async (e) => {
   // blob. It reveals nothing about a cipher's *contents*, only that two
   // items share a folder, same tradeoff Bitwarden/Vaultwarden both make.
   const folderId = folderIdRaw ? parseInt(folderIdRaw, 10) : null;
-  const itemKey = generateKey();
+  // Editing reuses the existing itemKey (just re-wrapped) rather than
+  // rotating it — this is a content edit, not a key-compromise response.
+  const itemKey = editingCipher ? editingCipher.itemKey : generateKey();
   const wrappedItemKey = await wrapKeyBytes(itemKey, session.vaultKey);
   const encryptedBlob = await encryptJSON(item, itemKey);
-  await api("v1/ciphers", {
-    method: "POST",
-    body: JSON.stringify({ type, folder_id: folderId, wrapped_item_key: wrappedItemKey, encrypted_blob: encryptedBlob }),
-  });
-  e.target.reset();
-  syncTypeFields(); // reset() puts the type <select> back on "login" — resync which field groups show
+  const body = { type, folder_id: folderId, wrapped_item_key: wrappedItemKey, encrypted_blob: encryptedBlob };
+  if (editingCipher) body.id = editingCipher.id;
+  await api("v1/ciphers", { method: "POST", body: JSON.stringify(body) });
   closeAddItemModal();
   await refreshItems();
 });
