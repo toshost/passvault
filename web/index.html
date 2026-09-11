@@ -27,6 +27,13 @@
     --radius: 14px;
     --radius-sm: 9px;
     --shadow: 0 1px 2px rgba(20,22,31,.04), 0 8px 24px rgba(20,22,31,.06);
+    /* One accent per item type, so a mixed grid reads at a glance instead
+       of every card wearing the same indigo regardless of what it holds. */
+    --type-note: #b45309; --type-note-tint: #fdf3e3;
+    --type-card: #0f766e; --type-card-tint: #e6f6f4;
+    --type-identity: #be185d; --type-identity-tint: #fce9f1;
+    --type-totp: #047857; --type-totp-tint: #e5f6ef;
+    --type-ssh: #334155; --type-ssh-tint: #eceef2;
   }
   /* This is a deliberately white/light-first design (the user asked for a
      white modern dashboard specifically) — dark mode still gets a real,
@@ -48,6 +55,11 @@
       --danger-tint: #2c1c1e;
       --success: #4ade80;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+      --type-note: #fbbf24; --type-note-tint: #362b13;
+      --type-card: #2dd4bf; --type-card-tint: #102d29;
+      --type-identity: #f472b6; --type-identity-tint: #38202b;
+      --type-totp: #34d399; --type-totp-tint: #113228;
+      --type-ssh: #94a3b8; --type-ssh-tint: #232833;
     }
   }
 
@@ -173,14 +185,31 @@
 
   .main { flex: 1; min-width: 0; padding: 26px 32px 60px; }
   .main-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
-  .greeting h1 { font-size: 21px; margin: 0 0 4px; }
+  .greeting h1 { font-size: 24px; font-weight: 800; letter-spacing: -.01em; margin: 0 0 4px; text-wrap: balance; }
   .greeting p { margin: 0; color: var(--text-muted); font-size: 13px; }
   .topbar-actions { display: flex; align-items: center; gap: 10px; }
   .search-input { width: 220px; }
 
   .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 26px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
-  .stat-value { font-size: 22px; font-weight: 700; line-height: 1.2; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow); transition: opacity .15s;
+  }
+  /* The one number worth leading with — everything else is a breakdown of
+     it, so it gets the accent instead of competing with six equal boxes. */
+  .stat-card.accent {
+    background: linear-gradient(160deg, var(--primary-tint), var(--surface) 65%);
+    border-color: transparent; box-shadow: var(--shadow), 0 0 0 1px var(--primary-tint);
+  }
+  .stat-card.accent .stat-value { color: var(--primary); }
+  .stat-card.zero { opacity: .48; }
+  .stat-icon {
+    width: 24px; height: 24px; border-radius: 7px; margin-bottom: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-tint); color: var(--primary);
+  }
+  .stat-card.accent .stat-icon { background: transparent; padding: 0; margin-bottom: 8px; width: auto; height: auto; }
+  .stat-value { font-size: 22px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
   .stat-label { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -188,26 +217,56 @@
   .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 10px; }
 
   .view[hidden] { display: none; }
-  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+  .pill-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+  .folder-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; }
+  .pill-row-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--text-muted); margin-right: 2px;
+  }
   .pill {
+    display: inline-flex; align-items: center; gap: 6px;
     padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border);
     background: var(--surface); color: var(--text-muted); font-size: 13px; font-weight: 600;
   }
+  .pill svg { flex: none; opacity: .8; }
   .pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .pill.active svg { opacity: 1; }
+  /* Folder filter is a second, independent filter axis stacked right under
+     the type pills — sized down and outline-only so the two rows don't
+     read as duplicate controls doing the same thing. */
+  #folder-filters { margin: 0; }
+  #folder-filters .pill { padding: 4px 12px; font-size: 12px; box-shadow: none; }
+  #folder-filters .pill.active { background: var(--text); border-color: var(--text); color: var(--surface); }
 
   #items, #shared-with-me-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
   #shared-with-me-list { margin-top: 12px; }
   #authenticator-list, #folder-list, #send-list, #emergency-by-me-list, #emergency-to-me-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
-  .item { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; }
+  .item { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; transition: box-shadow .15s, transform .15s; }
+  .item:hover { box-shadow: var(--shadow), 0 0 0 1px var(--border); transform: translateY(-1px); }
   .item-icon {
     flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--primary-tint); color: var(--primary);
     display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
   }
+  /* One accent per type (see the --type-* tokens) so a mixed grid reads at
+     a glance instead of every card wearing the same indigo tile. */
+  .item-icon.type-note { background: var(--type-note-tint); color: var(--type-note); }
+  .item-icon.type-card { background: var(--type-card-tint); color: var(--type-card); }
+  .item-icon.type-identity { background: var(--type-identity-tint); color: var(--type-identity); }
+  .item-icon.type-totp { background: var(--type-totp-tint); color: var(--type-totp); }
+  .item-icon.type-ssh_key { background: var(--type-ssh-tint); color: var(--type-ssh); }
   .item-main { flex: 1; min-width: 0; }
   .item-name { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .item-username { color: var(--text-muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item-actions { display: flex; gap: 6px; flex: none; margin-left: auto; }
+  .item-actions { display: flex; gap: 2px; flex: none; margin-left: auto; }
+  /* Six bordered boxes sitting on every card at full strength reads as
+     noise — keep them all reachable (a password manager shouldn't hide
+     actions behind hover-only for touch/accessibility reasons) but only
+     the icon shows by default; the box appears on hover/focus, same as
+     the tooltip it's paired with. */
+  .item-actions .btn-icon { border-color: transparent; background: transparent; box-shadow: none; }
+  .item-actions .btn-icon:hover, .item-actions .btn-icon:focus-visible { border-color: var(--border); background: var(--surface-2); }
+  .item-actions .btn-icon.danger:hover { border-color: var(--danger); }
   .item-detail {
     flex-basis: 100%; order: 3; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 13px; background: var(--surface-2); border: 1px solid var(--border);
@@ -499,27 +558,48 @@
       </div>
 
       <div class="stats-row">
-        <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total items</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-login">0</div><div class="stat-label">Logins</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-note">0</div><div class="stat-label">Notes</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-card">0</div><div class="stat-label">Cards</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-identity">0</div><div class="stat-label">Identities</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-totp">0</div><div class="stat-label">TOTP codes</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-ssh_key">0</div><div class="stat-label">SSH keys</div></div>
+        <div class="stat-card accent" id="stat-box-total">
+          <div class="stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg></div>
+          <div class="stat-value" id="stat-total">0</div><div class="stat-label">Total items</div>
+        </div>
+        <div class="stat-card" id="stat-box-login">
+          <div class="stat-icon" id="stat-icon-login"></div>
+          <div class="stat-value" id="stat-login">0</div><div class="stat-label">Logins</div>
+        </div>
+        <div class="stat-card" id="stat-box-note">
+          <div class="stat-icon" id="stat-icon-note"></div>
+          <div class="stat-value" id="stat-note">0</div><div class="stat-label">Notes</div>
+        </div>
+        <div class="stat-card" id="stat-box-card">
+          <div class="stat-icon" id="stat-icon-card"></div>
+          <div class="stat-value" id="stat-card">0</div><div class="stat-label">Cards</div>
+        </div>
+        <div class="stat-card" id="stat-box-identity">
+          <div class="stat-icon" id="stat-icon-identity"></div>
+          <div class="stat-value" id="stat-identity">0</div><div class="stat-label">Identities</div>
+        </div>
+        <div class="stat-card" id="stat-box-totp">
+          <div class="stat-icon" id="stat-icon-totp"></div>
+          <div class="stat-value" id="stat-totp">0</div><div class="stat-label">TOTP codes</div>
+        </div>
+        <div class="stat-card" id="stat-box-ssh_key">
+          <div class="stat-icon" id="stat-icon-ssh_key"></div>
+          <div class="stat-value" id="stat-ssh_key">0</div><div class="stat-label">SSH keys</div>
+        </div>
       </div>
 
       <!-- Vault view -->
       <section id="view-vault" class="view">
         <div class="pill-row" id="type-filters">
           <button type="button" class="pill active" data-type-key="all">All</button>
-          <button type="button" class="pill" data-type-key="login">Logins</button>
-          <button type="button" class="pill" data-type-key="note">Notes</button>
-          <button type="button" class="pill" data-type-key="card">Cards</button>
-          <button type="button" class="pill" data-type-key="identity">Identities</button>
-          <button type="button" class="pill" data-type-key="totp">TOTP</button>
-          <button type="button" class="pill" data-type-key="ssh_key">SSH keys</button>
+          <button type="button" class="pill" data-type-key="login"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="15" r="4" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m11 12 8-8m0 0h-5m5 0v5"/></svg>Logins</button>
+          <button type="button" class="pill" data-type-key="note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5Z"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 13h8M8 17h5"/></svg>Notes</button>
+          <button type="button" class="pill" data-type-key="card"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M2 10h20"/></svg>Cards</button>
+          <button type="button" class="pill" data-type-key="identity"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Identities</button>
+          <button type="button" class="pill" data-type-key="totp"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3.5 2"/></svg>TOTP</button>
+          <button type="button" class="pill" data-type-key="ssh_key"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="15" r="4" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m10 12 10-10m0 0h-5m5 0v5m-8 3 2 2m-5 1 2 2"/></svg>SSH keys</button>
         </div>
-        <div class="pill-row" id="folder-filters"></div>
+        <div class="folder-filter-row"><span class="pill-row-label">Folder</span><div class="pill-row" id="folder-filters"></div></div>
         <ul id="items"></ul>
         <div class="empty-state" id="empty-state" hidden>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path fill="currentColor" d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z"/></svg>

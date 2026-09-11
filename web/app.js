@@ -1316,6 +1316,8 @@ $("#check-breaches-btn").addEventListener("click", async () => {
 // Real counts from the actual decrypted data — no fabricated "security
 // score" or breach-check numbers, since this app doesn't have those
 // features yet (see README roadmap). Only what's genuinely known.
+let statIconsPainted = false;
+
 function renderStats() {
   const counts = { login: 0, note: 0, card: 0, identity: 0, ssh_key: 0 };
   let total = 0;
@@ -1335,6 +1337,21 @@ function renderStats() {
   $("#stat-identity").textContent = counts.identity;
   $("#stat-totp").textContent = totpCount;
   $("#stat-ssh_key").textContent = counts.ssh_key;
+
+  // Dim whichever breakdown boxes are empty, so the eye lands on the
+  // categories that actually have something in them instead of scanning
+  // seven identically-weighted "0"s.
+  const byType = { login: counts.login, note: counts.note, card: counts.card, identity: counts.identity, totp: totpCount, ssh_key: counts.ssh_key };
+  for (const [type, count] of Object.entries(byType)) {
+    $(`#stat-box-${type}`)?.classList.toggle("zero", count === 0);
+  }
+  if (!statIconsPainted) {
+    for (const type of Object.keys(byType)) {
+      const el = $(`#stat-icon-${type}`);
+      if (el) el.innerHTML = TYPE_ICONS[type] || "";
+    }
+    statIconsPainted = true;
+  }
 }
 
 // The Authenticator panel is a dedicated view of every item that carries a
@@ -1751,7 +1768,7 @@ function renderItem(id, type, item, itemKey, folderId) {
     ? `<button class="btn-icon" data-action="edit" aria-label="Edit" data-tip="Edit" type="button">${PENCIL_ICON}</button>`
     : "";
   li.innerHTML = `
-    <div class="item-icon">${TYPE_ICONS[type] || ""}</div>
+    <div class="item-icon type-${type}">${TYPE_ICONS[type] || ""}</div>
     <div class="item-main">
       <div class="item-name">${escapeHTML(item.name || "(untitled)")}</div>
       <div class="item-username">${escapeHTML(itemSubtitle(type, item))}</div>
