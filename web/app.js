@@ -252,6 +252,7 @@ $("#gen-alias-btn").addEventListener("click", async () => {
 });
 
 $("#open-add-item-btn").addEventListener("click", openAddItemModal);
+$("#empty-state-add-btn").addEventListener("click", openAddItemModal);
 $("#close-add-item-modal").addEventListener("click", closeAddItemModal);
 addItemModal.addEventListener("click", (e) => {
   if (e.target === addItemModal) closeAddItemModal(); // click on the backdrop itself, not its content
@@ -287,11 +288,19 @@ for (const navBtn of document.querySelectorAll(".nav-item[data-nav]")) {
 
 // --- Auth tabs (Log in / Sign up) ------------------------------------------
 
+const AUTH_HERO_COPY = {
+  login: ["Welcome back", "Your master password unlocks everything — it's never sent to this server, encrypted or otherwise."],
+  register: ["Create your vault", "Pick a master password only you will ever know. Everything else — every login, note, and key you save — is encrypted under it before it leaves your browser."],
+};
+
 for (const tab of document.querySelectorAll(".tab")) {
   tab.addEventListener("click", () => {
     for (const t of document.querySelectorAll(".tab")) t.classList.toggle("active", t === tab);
     $("#login-form").hidden = tab.id !== "tab-login";
     $("#register-form").hidden = tab.id !== "tab-register";
+    const [title, sub] = AUTH_HERO_COPY[tab.id === "tab-login" ? "login" : "register"];
+    $("#auth-hero-title").textContent = title;
+    $("#auth-hero-sub").textContent = sub;
     showError("");
   });
 }
@@ -946,6 +955,8 @@ function showRecoveryFlow() {
   $("#recovery-step-finish").hidden = true;
   $("#recovery-verify-error").hidden = true;
   $("#recovery-finish-error").hidden = true;
+  $("#auth-hero-title").textContent = "Recover your vault";
+  $("#auth-hero-sub").textContent = "Your recovery kit unwraps the same vault key you already have — nothing is lost, and no one but you can do this step.";
   showError("");
 }
 
@@ -954,6 +965,9 @@ function hideRecoveryFlow() {
   $("#recovery-flow").hidden = true;
   $(".tabs").hidden = false;
   $("#login-form").hidden = false;
+  const [title, sub] = AUTH_HERO_COPY.login;
+  $("#auth-hero-title").textContent = title;
+  $("#auth-hero-sub").textContent = sub;
   showError("");
 }
 
@@ -1383,10 +1397,11 @@ function renderVisibleItems() {
     count++;
   }
   emptyState.hidden = count > 0;
-  emptyStateText.textContent =
-    currentFolderFilter === "all" && currentTypeFilter === "all" && !currentSearchQuery
-      ? 'Your vault is empty. Click "+ Add Item" to get started.'
-      : "No items match this view.";
+  const trulyEmpty = currentFolderFilter === "all" && currentTypeFilter === "all" && !currentSearchQuery;
+  emptyStateText.textContent = trulyEmpty
+    ? "Nothing saved yet — add your first login, note, or key and it's encrypted before it ever leaves your browser."
+    : "No items match this view — try a different filter or search term.";
+  $("#empty-state-add-btn").hidden = !trulyEmpty;
 }
 
 function renderFolderUI() {
